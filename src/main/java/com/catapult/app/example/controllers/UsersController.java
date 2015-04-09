@@ -2,8 +2,8 @@ package com.catapult.app.example.controllers;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.logging.Logger;
 
+import org.apache.log4j.Logger;
 import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -30,7 +30,7 @@ import com.catapult.app.example.services.UserServices;
 @RequestMapping("/users")
 public class UsersController {
 
-    private final Logger LOG = Logger.getLogger(UsersController.class.getName());
+    private final static Logger LOG = Logger.getLogger(UsersController.class);
 
     @Autowired
     private UserServices userServices;
@@ -42,36 +42,43 @@ public class UsersController {
     private EndpointServices endpointServices;
     
     @RequestMapping(method = RequestMethod.POST, headers = { "Content-Type=application/json" })
-    public @ResponseBody GenericResponse createUser(@RequestBody final UserAdapter userAdapter) throws MissingFieldsException, UserAlreadyExistsException {
+    public @ResponseBody User createUser(@RequestBody final UserAdapter userAdapter) throws MissingFieldsException, UserAlreadyExistsException {
         LOG.info(String.format("Create user: userName %s", userAdapter.getUserName()));
         User user;
         try {
             user = userServices.createUser(userAdapter);
-            return new GenericResponse<User>(user);
+            LOG.info(String.format("User successfully created: %s", userAdapter.getUserName()));
+            return user;
+            //return new GenericResponse<User>(user);
         } catch (final MissingFieldsException e) {
-            return new GenericResponse<Map<String, String>>(e.getFields());
+            LOG.error(String.format("Missing fields to create user %s: %s", userAdapter.getUserName(), e));
+            //return new GenericResponse<Map<String, String>>(e.getFields());
         } catch (final UserAlreadyExistsException e) {
-            return new GenericResponse<String>(e.getErrorMessage());
+            LOG.error(String.format("User already exists: %s: %s", userAdapter.getUserName(), e));
+            //return new GenericResponse<String>(e.getErrorMessage());
         } catch (final AppPlatformException e) {
-            return new GenericResponse<String>(e.getMessage());
+            LOG.error(String.format("API request returned error for user %s: %s", userAdapter.getUserName(), e));
+            //return new GenericResponse<String>(e.getMessage());
         } catch (final ParseException e) {
-            return new GenericResponse<String>(ErrorMessages.GENERIC_ERROR);
+            LOG.error(String.format("Error parsing API response for user: %s: %s", userAdapter.getUserName(), e));
+            //return new GenericResponse<String>(ErrorMessages.GENERIC_ERROR);
         } catch (final Exception e) {
-            return new GenericResponse<String>(ErrorMessages.GENERIC_ERROR);
+            LOG.error(String.format("Error creating user %s: %s", userAdapter.getUserName(), e));
+            //return new GenericResponse<String>(ErrorMessages.GENERIC_ERROR);
         }
-        
+        return null;
     }
 
     @RequestMapping(method = RequestMethod.GET, value = "/{userName}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public @ResponseBody GenericResponse getUser(@PathVariable("userName") final String userName) {
+    public @ResponseBody User getUser(@PathVariable("userName") final String userName) {
         LOG.info(String.format("Get user: userName %s", userName));
-        User user;
         try {
-            user = userServices.getUser(userName);
-            return new GenericResponse<User>(user);
+            return userServices.getUser(userName);
+            //return new GenericResponse<User>(user);
         } catch (final UserNotFoundException e) {
-            return new GenericResponse<String>(e.getErrorMessage());
+            //return new GenericResponse<String>(e.getErrorMessage());
         }
+        return null;
     }
 
     @RequestMapping(method = RequestMethod.DELETE, value = "/{userName}", produces = MediaType.APPLICATION_JSON_VALUE)

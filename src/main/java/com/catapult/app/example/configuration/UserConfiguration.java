@@ -30,12 +30,10 @@ public class UserConfiguration {
     @Value(value = "${sandbox.base.url}")
     private String appUrl;
     
-    private BandwidthClient userClient;
     private String currentAppUrl;
     
     @PostConstruct
     public void userConfiguration() {
-        this.userClient = new BandwidthClient(userId, userApiKey, userApiSecret, apiUrl, apiVersion);
         this.currentAppUrl = this.appUrl + "/" + this.userId + "/";
     }
     
@@ -75,10 +73,10 @@ public class UserConfiguration {
     }
 
     /**
-     * @return the userClient
+     * @return the userClientuserClient
      */
     public BandwidthClient getUserClient() {
-        return userClient;
+        return BandwidthClient.getInstance();
     }
 
     /**

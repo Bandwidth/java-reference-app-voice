@@ -1,8 +1,11 @@
 package com.catapult.app.example.generics;
 
+
 public class GenericResponse<T> {
+    
     private T data;
 
+    public GenericResponse() { }
     
     public GenericResponse(T data) {
         super();
@@ -22,6 +25,4 @@ public class GenericResponse<T> {
     public void setData(T data) {
         this.data = data;
     }
-    
-
 }

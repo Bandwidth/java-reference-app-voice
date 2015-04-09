@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.log4j.Logger;
 import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -32,8 +33,9 @@ import com.catapult.app.example.exceptions.UserNotFoundException;
 public class UserServices {
 
     private final ConcurrentHashMap<String, User> users = new ConcurrentHashMap<String, User>();
-
     private final ConcurrentHashMap<String, CatapultUser> catapultUserData = new ConcurrentHashMap<String, CatapultUser>();
+    
+    private final static Logger LOG = Logger.getLogger(UserServices.class);
 
     @Autowired
     private DomainServices domainServices;
@@ -75,8 +77,13 @@ public class UserServices {
             final String userDomainName = "ud-" + RandomStringUtils.randomAlphanumeric(12);
             final String userDomainDescription = "Sandbox created Domain for user " + userConfiguration.getUserId();
             //Create a new Domain.
-            userDomain = domainServices.createDomain(userDomainName, userDomainDescription);
-            currentCatapultUser.setDomain(userDomain);
+            try {
+                userDomain = domainServices.createDomain(userDomainName, userDomainDescription);
+                currentCatapultUser.setDomain(userDomain);
+            } catch(AppPlatformException e) {
+                LOG.error(String.format("Could not create a Domain: %s", e));
+                throw e;
+            }
         }
         
         //Allocate a number
@@ -98,9 +105,16 @@ public class UserServices {
         //Create a new Endpoint.
         final String userEndpointName = "uep-" + RandomStringUtils.randomAlphanumeric(12);
         final String userEndpointDescription = "Sandbox created Endpoint for user " + userAdapter.getUserName();
-        //TODO: setup the application id.   
-        final Endpoint createdEndpoint = endpointServices.createEndpoint(currentCatapultUser.getDomain().getId(), userEndpointName, 
-                userAdapter.getPassword(), userEndpointDescription);
+        
+        Endpoint createdEndpoint;
+        
+        try {
+            createdEndpoint = endpointServices.createEndpoint(currentCatapultUser.getDomain().getId(), userEndpointName, 
+                    userAdapter.getPassword(), userEndpointDescription);
+        } catch(AppPlatformException e) {
+            LOG.error(String.format("Could not create a Domain: %s", e));
+            throw e;
+        }
         
         newUser.setDomain(new com.catapult.app.example.beans.Domain(currentCatapultUser.getDomain()));
         newUser.setEndpoint(new com.catapult.app.example.beans.Endpoint(createdEndpoint));
