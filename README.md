@@ -1,8 +1,8 @@
-The java-reference-app-voice is an example application to show how the Bandwidth Application Platform APIs can be used to build mobile voice applications. This example app is intended to work with the catapult-reference-app-voice-android and catapult-reference-app-voice-ios mobile applications to provide a working example of all the components working together to provide voice on your mobile device.
+The java-reference-app-voice is an example application to show how the Bandwidth Application Platform APIs can be used to build mobile voice applications. This example app is intended to work with the catapult-reference-app-voice-android and catapult-reference-app-voice-ios mobile applications to provide a working example of all the components synched together to provide SIP voice on your mobile device.
 
 The java-reference-app voice is a spring based application that can be deployed as war in Tomcat or Jetty. These instructions document how to deploy the example on Heroku using jetty runner.
 
-The app exposes a simple REST interface to create an end user and return the credentials that allow the mobile device to connect to the App Platform registrar. A user is created as follows:
+The java-reference-app-voice app exposes a simple REST interface to create an end user and return the credentials that allow the mobile device to connect to the App Platform registrar. A user is created as follows:
  
 POST /users
 {
@@ -13,7 +13,7 @@ POST /users
 This returns the following:
 
 HTTP/1.1 201 Created 
-Location: /v1/users/{user-id}/steve
+Location: /users/steve
 
 {
 	“userName”: “steve”,
@@ -33,7 +33,15 @@ Location: /v1/users/{user-id}/steve
     }
 }
 
-The mobile app creates a user on start-up and then uses the endpoint credentials to register with the App Platform SIP registrar.
+The mobile app calls the server on start-up to create a user. It then uses the endpoint credentials to register with the App Platform SIP registrar.
+
+The java-reference-app-voice app also processes calls. When creating the user, it associates the new App Platform phone number to an App Platform application, with the server url as the callbackUrl. This means all calls to that number are routed to the The java-reference-app-voice app.
+
+When a call from the device comes in, the java-reference-app-voice app looks up the user associated with the SIP url to get the phoneNumber for that user. It then makes an outbound call to that number.
+
+When a call is made to the phoneNumber, the java-reference-app-voice app looks up the sipUri for that phone and makes an outbound call to the device.
+
+All this is enabled with the single REST API call to create a user.
 
 To deploy this app on Heroku, you'll need the following:
 
@@ -78,8 +86,35 @@ From the command line run:
 
 mvn clean install
 
-
 4. Create a new Heroku site
+
+From the command line run the following:
+
+heroku create
+
 5. Push the app to the Heroku site
+
+From the command line run the following:
+
+git add .
+git commit -m "updated config file"
+git push heroku master
+heroku open
+
 6. Test it
+
+Use the url from the heroku app to run the following curl command:
+
+curl -H 'Content-Type: application/json' -d '{"userName" : "user1", "password" : "j7qIpoX48"}' -XPOST 'https://<heroku-site-url>/users'
+
+Which returns:
+
+{
+    "userName":"user1",
+    "endpoint":{"id":"re-ay7fbfphmovcypwwcqsnssy","name":"uep-oKz9hdQAnwZS","domainId":"rd-qflpsmz47yic54xqkmr36pq","enabled":true,"sipUri":"sip:uep-oKz9hdQAnwZS@ud-H6Z0z9y3VG53.bwapp.bwsip.io","credentials":{"realm":"ud-H6Z0z9y3VG53.bwapp.bwsip.io","username":"uep-oKz9hdQAnwZS"}},
+    "phoneNumber":"+14692137316"
+    
+}
+
+
 
