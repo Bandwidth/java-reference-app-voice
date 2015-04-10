@@ -34,7 +34,9 @@ public class ExceptionsHandler {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             response.getWriter().print(ex.getFields());
         } catch (final IOException e) {
-            LOG.error("ERROR writing response: ", e);
+            if(LOG.isInfoEnabled()) {
+                LOG.error("ERROR writing response: ", e);
+            }
         }
     }
 
@@ -48,9 +50,13 @@ public class ExceptionsHandler {
         try {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             response.getWriter().print(ex.getErrorMessage());
-            LOG.error(String.format("User already exists: %s", ex.getErrorMessage()));
+            if(LOG.isInfoEnabled()) {
+                LOG.error(String.format("User already exists: %s", ex.getErrorMessage()));
+            }
         } catch (final IOException e) {
-            LOG.error("ERROR writing response: ", e);
+            if(LOG.isInfoEnabled()) {
+                LOG.error("ERROR writing response: ", e);
+            }
         }
     }
     
@@ -64,9 +70,13 @@ public class ExceptionsHandler {
         try {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             response.getWriter().print(ex.getMessage());
-            LOG.error(String.format("User already exists: %s", ex.getMessage()));
+            if(LOG.isInfoEnabled()) {
+                LOG.error(String.format("User already exists: %s", ex.getMessage()));
+            }
         } catch (final IOException e) {
-            LOG.error("ERROR writing response: ", e);
+            if(LOG.isInfoEnabled()) {
+                LOG.error("ERROR writing response: ", e);
+            }
         }
     }
     
@@ -80,9 +90,13 @@ public class ExceptionsHandler {
         try {
             response.setStatus(HttpServletResponse.SC_EXPECTATION_FAILED);
             response.getWriter().print(ErrorMessages.GENERIC_ERROR);
-            LOG.error(String.format("Parse exception error: %s", ex.getMessage()));
+            if(LOG.isInfoEnabled()) {
+                LOG.error(String.format("Parse exception error: %s", ex.getMessage()));
+            }
         } catch (final IOException e) {
-            LOG.error("ERROR writing response: ", e);
+            if(LOG.isInfoEnabled()) {
+                LOG.error("ERROR writing response: ", e);
+            }
         }
     }
     
@@ -96,9 +110,13 @@ public class ExceptionsHandler {
         try {
             response.setStatus(HttpServletResponse.SC_EXPECTATION_FAILED);
             response.getWriter().print(ErrorMessages.GENERIC_ERROR);
-            LOG.error(String.format("Generic exception: %s", ex));
+            if(LOG.isInfoEnabled()) {
+                LOG.error(String.format("Generic exception: %s", ex));
+            }
         } catch (final IOException e) {
-            
+            if(LOG.isInfoEnabled()) {
+                LOG.error("ERROR writing response: ", e);
+            }
         }
     }
     
@@ -112,9 +130,13 @@ public class ExceptionsHandler {
         try {
             response.setStatus(HttpServletResponse.SC_EXPECTATION_FAILED);
             response.getWriter().print(ErrorMessages.GENERIC_ERROR);
-            LOG.error(String.format("Unexpected exception: %s", ex));
+            if(LOG.isInfoEnabled()) {
+                LOG.error(String.format("Unexpected exception: %s", ex));
+            }
         } catch (final IOException e) {
-            LOG.error("ERROR writing response: ", e);
+            if(LOG.isInfoEnabled()) {
+                LOG.error("ERROR writing response: ", e);
+            }
         }
     }
 }
