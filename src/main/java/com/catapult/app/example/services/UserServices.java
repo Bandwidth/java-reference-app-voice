@@ -10,7 +10,6 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.log4j.Logger;
 import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
 import com.bandwidth.sdk.AppPlatformException;
@@ -29,7 +28,6 @@ import com.catapult.app.example.exceptions.UserAlreadyExistsException;
 import com.catapult.app.example.exceptions.UserNotFoundException;
 
 @Service
-@Scope(value = "singleton")
 public class UserServices {
 
     private final ConcurrentHashMap<String, User> users = new ConcurrentHashMap<String, User>();
@@ -118,7 +116,8 @@ public class UserServices {
         
         newUser.setDomain(new com.catapult.app.example.beans.Domain(currentCatapultUser.getDomain()));
         newUser.setEndpoint(new com.catapult.app.example.beans.Endpoint(createdEndpoint));
-        newUser.setPhoneNumber(new com.catapult.app.example.beans.PhoneNumber(phoneNumbers.get(0)));
+        //newUser.setPhoneNumber(new com.catapult.app.example.beans.PhoneNumber(phoneNumbers.get(0)));
+        newUser.setNumber(phoneNumbers.get(0).getNumber());
         
         users.putIfAbsent(userAdapter.getUserName(), newUser);
         currentCatapultUser.getPhoneNumbers().addAll(phoneNumbers);
@@ -163,7 +162,7 @@ public class UserServices {
         final CatapultUser currentCatapultUser = catapultUserData.get(userConfiguration.getUserId());
         PhoneNumber deletedNumber = null;
         for(final PhoneNumber currentnumber : currentCatapultUser.getPhoneNumbers()) {
-            if(currentnumber.getNumber().equals(deletedUser.getPhoneNumber().getNumber())) {
+            if(currentnumber.getNumber().equals(deletedUser.getNumber())) {
                 deletedNumber = currentnumber;
                 currentnumber.delete();
             }

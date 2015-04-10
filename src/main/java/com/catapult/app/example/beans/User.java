@@ -15,7 +15,8 @@ public class User implements Serializable {
     private String password;
     private Domain domain;
     private Endpoint endpoint;
-    private PhoneNumber phoneNumber;
+    //private PhoneNumber phoneNumber;
+    private String number;
     private Application application;
     
     public User(){};
@@ -88,20 +89,6 @@ public class User implements Serializable {
     }
 
     /**
-     * @return the phoneNumber
-     */
-    public PhoneNumber getPhoneNumber() {
-        return phoneNumber;
-    }
-
-    /**
-     * @param phoneNumber the phoneNumber to set
-     */
-    public void setPhoneNumber(final PhoneNumber phoneNumber) {
-        this.phoneNumber = phoneNumber;
-    }
-
-    /**
      * @return the application
      */
     public Application getApplication() {
@@ -113,5 +100,19 @@ public class User implements Serializable {
      */
     public void setApplication(final Application application) {
         this.application = application;
+    }
+
+    /**
+     * @return the number
+     */
+    public String getNumber() {
+        return number;
+    }
+
+    /**
+     * @param number the number to set
+     */
+    public void setNumber(final String number) {
+        this.number = number;
     }
 }
