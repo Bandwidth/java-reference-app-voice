@@ -6,6 +6,7 @@ import java.util.List;
 public class CatapultUser {
 
     private com.bandwidth.sdk.model.Domain domain;
+
     private List<com.bandwidth.sdk.model.PhoneNumber> phoneNumbers = new ArrayList<com.bandwidth.sdk.model.PhoneNumber>();
 
     /**

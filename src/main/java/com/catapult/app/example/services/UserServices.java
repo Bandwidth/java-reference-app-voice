@@ -31,6 +31,7 @@ import com.catapult.app.example.exceptions.UserNotFoundException;
 public class UserServices {
 
     private final ConcurrentHashMap<String, User> users = new ConcurrentHashMap<String, User>();
+
     private final ConcurrentHashMap<String, CatapultUser> catapultUserData = new ConcurrentHashMap<String, CatapultUser>();
     
     private final static Logger LOG = Logger.getLogger(UserServices.class);
@@ -50,28 +51,32 @@ public class UserServices {
     @Autowired
     private PhoneNumberServices phoneServices;
     
-    public User createUser(final UserAdapter userAdapter) 
-            throws MissingFieldsException, UserAlreadyExistsException, AppPlatformException, ParseException, Exception {
-        //Validate the adapter fields.
-        if(userAdapter == null) {
+    public User createUser(final UserAdapter userAdapter) throws MissingFieldsException, UserAlreadyExistsException,
+            AppPlatformException, ParseException, Exception {
+
+        // Validate the adapter fields.
+        if (userAdapter == null) {
             throw new MissingFieldsException();
         }
+
         userAdapter.validate();
+
         final User currentUser = users.get(userAdapter.getUserName());
-        if(currentUser != null) {
+        if (currentUser != null) {
             return currentUser;
         }
-        
+
         final User newUser = new User(userAdapter);
-        //Verify if the catapult user has a existing sandbox app domain created.
+
+        // Verify if the catapult user has a existing sandbox app domain created.
         CatapultUser currentCatapultUser = catapultUserData.get(userConfiguration.getUserId());
         Domain userDomain;
-        if(currentCatapultUser == null) {
+        if (currentCatapultUser == null) {
             currentCatapultUser = new CatapultUser();
         }
-        
-        //Create a domain
-        if(currentCatapultUser.getDomain() == null) {
+
+        // Create a domain
+        if (currentCatapultUser.getDomain() == null) {
             final String userDomainName = "ud-" + RandomStringUtils.randomAlphanumeric(12);
             final String userDomainDescription = "Sandbox created Domain for user " + userConfiguration.getUserId();
             //Create a new Domain.
@@ -84,23 +89,23 @@ public class UserServices {
             }
         }
         
-        //Allocate a number
+        // Allocate a number
         final List<PhoneNumber> phoneNumbers = phoneServices.searchAndAllocateANumber(1, "469", false);
         
-        //Create a new Application
+        // Create a new Application
         final Map<String, Object> applicationParameters = new HashMap<String, Object>();
         final String userApplicationDescription = "Sandbox created Application for user " + userAdapter.getUserName();
-        //Define the application description
+        // Define the application description
         applicationParameters.put(ParametersConstants.NAME, userApplicationDescription);
-        //Define the callback URL
+        // Define the callback URL
         applicationParameters.put(ParametersConstants.INCOMING_CALL_URL, endpointsConfiguration.getCallbacksBaseUrl());
-        final Application createdApplication = Application.create(userConfiguration.getUserClient(), applicationParameters);
+        final Application createdApplication = Application.create(applicationParameters);
         
-        //Associate the number to the application
+        // Associate the number to the application
         phoneNumbers.get(0).setApplicationId(createdApplication.getId());
         phoneServices.updatePhoneNumber(phoneNumbers.get(0));
         
-        //Create a new Endpoint.
+        // Create a new Endpoint.
         final String userEndpointName = "uep-" + RandomStringUtils.randomAlphanumeric(12);
         final String userEndpointDescription = "Sandbox created Endpoint for user " + userAdapter.getUserName();
         
@@ -116,7 +121,7 @@ public class UserServices {
         
         newUser.setDomain(new com.catapult.app.example.beans.Domain(currentCatapultUser.getDomain()));
         newUser.setEndpoint(new com.catapult.app.example.beans.Endpoint(createdEndpoint));
-        //newUser.setPhoneNumber(new com.catapult.app.example.beans.PhoneNumber(phoneNumbers.get(0)));
+        // newUser.setPhoneNumber(new com.catapult.app.example.beans.PhoneNumber(phoneNumbers.get(0)));
         newUser.setNumber(phoneNumbers.get(0).getNumber());
         
         users.putIfAbsent(userAdapter.getUserName(), newUser);

@@ -2,6 +2,7 @@ package com.catapult.app.example.services;
 
 import java.io.IOException;
 
+import com.bandwidth.sdk.model.Domain;
 import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -11,12 +12,8 @@ import com.bandwidth.sdk.AppPlatformException;
 import com.catapult.app.example.configuration.UserConfiguration;
 
 @Service
-@Scope(value = "singleton")
 public class DomainServices {
 
-    @Autowired
-    private UserConfiguration userConfiguration;
-    
     /**
      * Create a Domain
      * @return the created Domain.
@@ -26,7 +23,7 @@ public class DomainServices {
      */
     public com.bandwidth.sdk.model.Domain createDomain(final String name, 
             final String description) throws AppPlatformException, ParseException, Exception {
-        return com.bandwidth.sdk.model.Domain.create(userConfiguration.getUserClient(), name, description);
+        return Domain.create(name, description);
     }
     
     /**
@@ -36,6 +33,6 @@ public class DomainServices {
      * @throws Exception 
      */
     public void deleteDomain(final String domainId) throws AppPlatformException, IOException {
-        com.bandwidth.sdk.model.Domain.delete(userConfiguration.getUserClient(), domainId);
+        Domain.delete(domainId);
     }
 }

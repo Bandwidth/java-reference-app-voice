@@ -4,9 +4,6 @@ import java.io.Serializable;
 
 public class Credentials implements Serializable {
 
-    /**
-     * 
-     */
     private static final long serialVersionUID = 8442887578655772726L;
     
     private String realm;

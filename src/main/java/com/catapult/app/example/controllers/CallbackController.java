@@ -22,6 +22,6 @@ public class CallbackController {
      */
     @RequestMapping(method = RequestMethod.POST, value = "/{userName}/callback", headers = "Content-Type=application/json")
     public void receiveCallback(@RequestBody final CallbackAdapter callbackAdapter) {
-        
+        callbackServices.handleCallback(callbackAdapter);
     }
 }

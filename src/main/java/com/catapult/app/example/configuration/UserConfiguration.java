@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 import com.bandwidth.sdk.BandwidthClient;
 
 @Component
-@Scope(value = "singleton")
 public class UserConfiguration {
 
     @Value(value = "${sandbox.user.id}")
@@ -28,13 +27,15 @@ public class UserConfiguration {
     private String apiVersion;
    
     @Value(value = "${sandbox.base.url}")
-    private String appUrl;
-    
-    private String currentAppUrl;
-    
+    private String sandboxBaseUrl;
+
     @PostConstruct
     public void userConfiguration() {
-        this.currentAppUrl = this.appUrl + "/" + this.userId + "/";
+        System.setProperty("com.bandwidth.userId", userId);
+        System.setProperty("com.bandwidth.apiToken", userApiKey);
+        System.setProperty("com.bandwidth.apiSecret", userApiSecret);
+        System.setProperty("com.bandwidth.apiEndpoint", apiUrl);;
+        System.setProperty("com.bandwidth.apiVersion", apiVersion);
     }
     
     /**
@@ -45,51 +46,10 @@ public class UserConfiguration {
     }
 
     /**
-     * @return the userApiToken
+     * @return the sandboxBaseUrl
      */
-    public String getUserApiKey() {
-        return userApiKey;
+    public String getSandboxBaseUrl() {
+        return sandboxBaseUrl;
     }
 
-    /**
-     * @return the userApiSecret
-     */
-    public String getUserApiSecret() {
-        return userApiSecret;
-    }
-
-    /**
-     * @return the apiUrl
-     */
-    public String getApiUrl() {
-        return apiUrl;
-    }
-
-    /**
-     * @return the apiVersion
-     */
-    public String getApiVersion() {
-        return apiVersion;
-    }
-
-    /**
-     * @return the userClientuserClient
-     */
-    public BandwidthClient getUserClient() {
-        return BandwidthClient.getInstance();
-    }
-
-    /**
-     * @return the appUrl
-     */
-    public String getAppUrl() {
-        return appUrl;
-    }
-
-    /**
-     * @return the currentAppUrl
-     */
-    public String getCurrentAppUrl() {
-        return currentAppUrl;
-    }
 }

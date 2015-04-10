@@ -20,18 +20,14 @@ import com.catapult.app.example.exceptions.AllocatePhoneNumberException;
 import com.catapult.app.example.exceptions.SearchPhoneNumberException;
 
 @Service
-@Scope(value = "singleton")
 public class PhoneNumberServices {
 
     private final Logger LOG = Logger.getLogger(PhoneNumberServices.class.getName());
-    
-    @Autowired
-    private UserConfiguration userConfiguration;
-    
+
     /**
      * Search for an available number.
      * @param quantity the number quantity
-     * @param state the user state.
+     * @param areaCode the number area code.
      * @param isToolFree if the requested number must be a toolfree number.
      * @return the available number.
      * @throws SearchPhoneNumberException 
@@ -42,9 +38,9 @@ public class PhoneNumberServices {
             params.put(ParametersConstants.QUANTITY, quantity);
             params.put(ParametersConstants.AREA_CODE, areaCode);
             if(isToolFree) {
-                return AvailableNumber.searchTollFree(userConfiguration.getUserClient(), params);
+                return AvailableNumber.searchTollFree(params);
             }
-            return AvailableNumber.searchLocal(userConfiguration.getUserClient(), params);
+            return AvailableNumber.searchLocal(params);
         } catch (final Exception e) {
             throw new SearchPhoneNumberException();
         }
@@ -60,7 +56,7 @@ public class PhoneNumberServices {
         try {
             final Map<String, Object> params = new HashMap<String, Object>();
             params.put(ParametersConstants.NUMBER, availableNumber.getNumber());
-            return PhoneNumber.create(userConfiguration.getUserClient(), params);
+            return PhoneNumber.create(params);
         } catch (final Exception e) {
             throw new AllocatePhoneNumberException();
         }
@@ -69,7 +65,7 @@ public class PhoneNumberServices {
     /**
      * Search and allocate numbers;
      * @param quantity
-     * @param state the user state.
+     * @param areaCode the number area code.
      * @param isToolFree if it must be toolfreeNumbers or not
      * @return the list of the allocated numbers
      * @throws AllocatePhoneNumberException .

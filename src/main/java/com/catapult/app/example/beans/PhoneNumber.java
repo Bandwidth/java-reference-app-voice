@@ -15,7 +15,6 @@ public class PhoneNumber implements Serializable {
     private String city;
     private String state;
     
-    
     public PhoneNumber() { }
     
     /**
