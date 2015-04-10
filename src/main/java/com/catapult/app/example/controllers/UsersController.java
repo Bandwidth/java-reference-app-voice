@@ -1,7 +1,6 @@
 package com.catapult.app.example.controllers;
 
 import java.io.IOException;
-import java.util.Map;
 
 import org.apache.log4j.Logger;
 import org.json.simple.parser.ParseException;
@@ -42,31 +41,31 @@ public class UsersController {
     private EndpointServices endpointServices;
     
     @RequestMapping(method = RequestMethod.POST, headers = { "Content-Type=application/json" })
-    public @ResponseBody User createUser(@RequestBody final UserAdapter userAdapter) throws MissingFieldsException, UserAlreadyExistsException {
+    public @ResponseBody User createUser(@RequestBody final UserAdapter userAdapter) 
+            throws AppPlatformException, ParseException, Exception {
+        
         LOG.info(String.format("Create user: userName %s", userAdapter.getUserName()));
         User user;
         try {
             user = userServices.createUser(userAdapter);
             LOG.info(String.format("User successfully created: %s", userAdapter.getUserName()));
             return user;
-            //return new GenericResponse<User>(user);
         } catch (final MissingFieldsException e) {
             LOG.error(String.format("Missing fields to create user %s: %s", userAdapter.getUserName(), e));
-            //return new GenericResponse<Map<String, String>>(e.getFields());
+            throw e;
         } catch (final UserAlreadyExistsException e) {
             LOG.error(String.format("User already exists: %s: %s", userAdapter.getUserName(), e));
-            //return new GenericResponse<String>(e.getErrorMessage());
+            throw e;
         } catch (final AppPlatformException e) {
             LOG.error(String.format("API request returned error for user %s: %s", userAdapter.getUserName(), e));
-            //return new GenericResponse<String>(e.getMessage());
+            throw e;
         } catch (final ParseException e) {
             LOG.error(String.format("Error parsing API response for user: %s: %s", userAdapter.getUserName(), e));
-            //return new GenericResponse<String>(ErrorMessages.GENERIC_ERROR);
+            throw e;
         } catch (final Exception e) {
             LOG.error(String.format("Error creating user %s: %s", userAdapter.getUserName(), e));
-            //return new GenericResponse<String>(ErrorMessages.GENERIC_ERROR);
+            throw e;
         }
-        return null;
     }
 
     @RequestMapping(method = RequestMethod.GET, value = "/{userName}", produces = MediaType.APPLICATION_JSON_VALUE)
