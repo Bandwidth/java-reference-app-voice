@@ -16,11 +16,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.bandwidth.sdk.AppPlatformException;
 import com.catapult.app.example.adapters.UserAdapter;
 import com.catapult.app.example.beans.User;
-import com.catapult.app.example.constants.ErrorMessages;
 import com.catapult.app.example.exceptions.MissingFieldsException;
 import com.catapult.app.example.exceptions.UserAlreadyExistsException;
 import com.catapult.app.example.exceptions.UserNotFoundException;
-import com.catapult.app.example.generics.GenericResponse;
 import com.catapult.app.example.services.DomainServices;
 import com.catapult.app.example.services.EndpointServices;
 import com.catapult.app.example.services.UserServices;
@@ -69,41 +67,24 @@ public class UsersController {
     }
 
     @RequestMapping(method = RequestMethod.GET, value = "/{userName}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public @ResponseBody User getUser(@PathVariable("userName") final String userName) {
+    public @ResponseBody User getUser(@PathVariable("userName") final String userName) 
+            throws UserNotFoundException {
         LOG.info(String.format("Get user: userName %s", userName));
-        try {
-            return userServices.getUser(userName);
-            //return new GenericResponse<User>(user);
-        } catch (final UserNotFoundException e) {
-            //return new GenericResponse<String>(e.getErrorMessage());
-        }
-        return null;
+        return userServices.getUser(userName);
     }
 
     @RequestMapping(method = RequestMethod.DELETE, value = "/{userName}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public @ResponseBody GenericResponse deleteUser(@PathVariable("userName") final String userName) {
+    public @ResponseBody String deleteUser(@PathVariable("userName") final String userName) 
+            throws UserNotFoundException, AppPlatformException, IOException {
         LOG.info(String.format("Delete user: userId %s", userName));
-        try {
-            userServices.deleteUser(userName);
-            return new GenericResponse<String>("Deleted userName " + userName);
-        } catch (final UserNotFoundException e) {
-            return new GenericResponse<String>(e.getErrorMessage());
-        } catch (final AppPlatformException e) {
-            return new GenericResponse<String>(e.getMessage());
-        } catch (final IOException ex) {
-            return new GenericResponse<String>(ErrorMessages.GENERIC_ERROR);
-        }
+        userServices.deleteUser(userName);
+        return "Deleted userName " + userName;
     }
 
     @RequestMapping(method = RequestMethod.PUT, value = "/{userName}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public @ResponseBody GenericResponse updateUser(@PathVariable("userName") final String userName, @RequestBody final UserAdapter userAdapter) {
+    public @ResponseBody User updateUser(@PathVariable("userName") final String userName, @RequestBody final UserAdapter userAdapter) 
+            throws UserNotFoundException, UserAlreadyExistsException {
         LOG.info(String.format("Update user: userName %s", userName));
-        try {
-            return new GenericResponse<User>(userServices.updateUser(userName, userAdapter));
-        } catch (final UserNotFoundException e) {
-            return new GenericResponse<String>(e.getErrorMessage());
-        } catch (final UserAlreadyExistsException e) {
-            return new GenericResponse<String>(e.getErrorMessage());
-        }
+        return userServices.updateUser(userName, userAdapter);
     }
 }
