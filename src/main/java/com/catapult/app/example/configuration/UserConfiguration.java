@@ -31,10 +31,16 @@ public class UserConfiguration {
     private String appUrl;
     
     private String currentAppUrl;
+
+    private BandwidthClient bandwidthClient;
     
     @PostConstruct
     public void userConfiguration() {
         this.currentAppUrl = this.appUrl + "/" + this.userId + "/";
+        bandwidthClient = BandwidthClient.getInstance();
+        bandwidthClient.setCredentials(userId, userApiKey, userApiSecret);
+        bandwidthClient.setEndpointandVersion(apiUrl, apiVersion);
+
     }
     
     /**
@@ -76,7 +82,7 @@ public class UserConfiguration {
      * @return the userClientuserClient
      */
     public BandwidthClient getUserClient() {
-        return BandwidthClient.getInstance();
+        return bandwidthClient;
     }
 
     /**
