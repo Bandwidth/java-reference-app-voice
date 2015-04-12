@@ -85,7 +85,7 @@ From the command line run:
 mvn clean install
 ```
 
-#### Create a new Heroku site, 
+#### Create a new Heroku app
 
 From the command line run the following:
 
