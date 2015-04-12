@@ -1,4 +1,4 @@
-## Bandwidth Java Server Example for Mobile Voice Clients
+### Bandwidth Java Server Example for Mobile Voice Clients
 
 The java-reference-app-voice is an example application to show how the Bandwidth Application Platform APIs can be used to build mobile voice applications. This example app is intended to work with the catapult-reference-app-voice-android and catapult-reference-app-voice-ios mobile applications to provide a working example of all the components synched together to provide SIP voice on your mobile device.
 
@@ -50,7 +50,7 @@ When a call is made to the phoneNumber, the java-reference-app-voice app looks u
 
 All this is enabled with the single REST API call to create a user.
 
-## Prerequisites
+### Prerequisites
 To deploy this app on Heroku, you'll need the following:
 
 1. An Application Platform Account. Sign up [here](https://catapult.inetwork.com/pages/signup.jsf) from one 
@@ -59,7 +59,7 @@ To deploy this app on Heroku, you'll need the following:
 4. A working Java 1.7 development environment.
 5. Maven 3.0 or greater
 
-The steps to deploy this are:
+### Steps to deploy
 
 1. Clone the repo
 2. Build it
@@ -68,7 +68,7 @@ The steps to deploy this are:
 5. Push the app to the Heroku site
 6. Test it
 
-## Clone the repo
+#### Clone the repo
 
 From a command prompt run the following:
 
@@ -77,7 +77,7 @@ git clone https://github.com/bandwidthcom/java-reference-app-voice.git
 cd java-reference-app-voice
 ```
 
-## Build it
+#### Build it
 
 From the command line run:
 
@@ -85,7 +85,7 @@ From the command line run:
 mvn clean install
 ```
 
-## Create a new Heroku site, 
+#### Create a new Heroku site, 
 
 From the command line run the following:
 
@@ -93,7 +93,7 @@ From the command line run the following:
 heroku create
 ```
 
-## Edit the properties file with user-id, api-token and api-secret, heroku-url
+#### Edit the properties file with user-id, api-token and api-secret, heroku-url
 
 With your favorite text editor open the src/main/resources/catapult-app-example.properties file and replace the following (these value are available in the App Platform developer console from the Accounts tab):
 
@@ -106,7 +106,7 @@ sandbox.api.version=v1
 sandbox.base.url=<your_herorku_server_url>
 ```
 
-## Push the app to the Heroku site
+#### Push the app to the Heroku site
 
 From the command line run the following:
 
@@ -117,7 +117,7 @@ git push heroku master
 heroku open
 ```
 
-## Test it
+#### Test it
 
 Use the url from the heroku app to run the following curl command:
 
