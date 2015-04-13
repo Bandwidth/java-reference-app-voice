@@ -1,9 +1,7 @@
 package com.catapult.app.example.services;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang3.RandomStringUtils;
@@ -22,7 +20,6 @@ import com.catapult.app.example.beans.CatapultUser;
 import com.catapult.app.example.beans.User;
 import com.catapult.app.example.configuration.EndpointsConfiguration;
 import com.catapult.app.example.configuration.UserConfiguration;
-import com.catapult.app.example.constants.ParametersConstants;
 import com.catapult.app.example.exceptions.MissingFieldsException;
 import com.catapult.app.example.exceptions.UserAlreadyExistsException;
 import com.catapult.app.example.exceptions.UserNotFoundException;
@@ -50,6 +47,9 @@ public class UserServices {
     
     @Autowired
     private PhoneNumberServices phoneServices;
+    
+    @Autowired
+    private ApplicationServices applicationServices;
     
     public User createUser(final UserAdapter userAdapter) throws MissingFieldsException, UserAlreadyExistsException,
             AppPlatformException, ParseException, Exception {
@@ -93,13 +93,7 @@ public class UserServices {
         final List<PhoneNumber> phoneNumbers = phoneServices.searchAndAllocateANumber(1, "469", false);
         
         // Create a new Application
-        final Map<String, Object> applicationParameters = new HashMap<String, Object>();
-        final String userApplicationDescription = "Sandbox created Application for user " + userAdapter.getUserName();
-        // Define the application description
-        applicationParameters.put(ParametersConstants.NAME, userApplicationDescription);
-        // Define the callback URL
-        applicationParameters.put(ParametersConstants.INCOMING_CALL_URL, endpointsConfiguration.getCallbacksBaseUrl());
-        final Application createdApplication = Application.create(applicationParameters);
+        final Application createdApplication = applicationServices.create(userAdapter.getUserName());
         
         // Associate the number to the application
         phoneNumbers.get(0).setApplicationId(createdApplication.getId());
@@ -114,12 +108,14 @@ public class UserServices {
         try {
             createdEndpoint = endpointServices.createEndpoint(currentCatapultUser.getDomain().getId(), userEndpointName, 
                     userAdapter.getPassword(), userEndpointDescription);
+            //Add the application ID to the endpoint.
+            
         } catch(AppPlatformException e) {
             LOG.error(String.format("Could not create a Domain: %s", e));
             throw e;
         }
         
-        newUser.setDomain(new com.catapult.app.example.beans.Domain(currentCatapultUser.getDomain()));
+        //newUser.setDomain(new com.catapult.app.example.beans.Domain(currentCatapultUser.getDomain()));
         newUser.setEndpoint(new com.catapult.app.example.beans.Endpoint(createdEndpoint));
         // newUser.setPhoneNumber(new com.catapult.app.example.beans.PhoneNumber(phoneNumbers.get(0)));
         newUser.setNumber(phoneNumbers.get(0).getNumber());
