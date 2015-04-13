@@ -50,16 +50,14 @@ public class CallbackServices {
                     return;
                 }
             }
-
             // Case Incoming call to Endpoint
             else if (callbackAdapter.getTo() != null) {
                 if (sipPattern.matcher(callbackAdapter.getTo()).find()) {
-
                     createCallToEndpoint(callbackAdapter, userName);
                     return;
                 }
             }
-            LOG.info("Received incoming call from NON Mobile Client");
+            LOG.info("Received incoming call FROM or TO NON Mobile Client");
 
         } else if ("answer".equalsIgnoreCase(callbackAdapter.getEventType())) {
             bridgeCreatedCalls(callbackAdapter, userName);
@@ -70,7 +68,36 @@ public class CallbackServices {
     }
 
     private void createCallFromEndpoint(final CallbackAdapter callbackAdapter, final String userName) {
-        //TODO: lvivo
+        try {
+            User user = userServices.getUser(userName);
+
+            Call call = Call.create(callbackAdapter.getTo(), user.getNumber(),
+                    endpointsConfiguration.getCallbacksBaseUrl(), userName);
+
+            Map<String, BridgeDetails> bridgeDetailsMap = bridgeMap.get(user.getUserName());
+            if (bridgeDetailsMap == null) {
+                bridgeDetailsMap = new ConcurrentHashMap<String, BridgeDetails>();
+                bridgeMap.put(user.getUserName(), bridgeDetailsMap);
+            }
+
+            BridgeDetails bridgeDetails = new BridgeDetails();
+
+            CallDetails callDetails1 = new CallDetails(callbackAdapter.getCallId());
+            callDetails1.addCallback(callbackAdapter);
+
+            CallDetails callDetails2 = new CallDetails(call.getId());
+
+            bridgeDetails.setCall1(callDetails1);
+            bridgeDetails.setCall1(callDetails2);
+
+            bridgeDetailsMap.put(call.getId(), bridgeDetails);
+
+        } catch (UserNotFoundException e) {
+            LOG.error("User not found to create call", e);
+
+        } catch (Exception e) {
+            LOG.error("Could not create outbound call based on call FROM endpoint", e);
+        }
     }
 
     private void createCallToEndpoint(final CallbackAdapter callbackAdapter, final String userName) {
@@ -102,7 +129,7 @@ public class CallbackServices {
             LOG.error("User not found to create call", e);
 
         } catch (Exception e) {
-            LOG.error("Could not create outbound call based on call To endpoint", e);
+            LOG.error("Could not create outbound call based on call TO endpoint", e);
         }
     }
 
