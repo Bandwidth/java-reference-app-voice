@@ -1,9 +1,6 @@
 package com.catapult.app.example.services;
 
-import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang3.RandomStringUtils;
@@ -22,7 +19,6 @@ import com.catapult.app.example.beans.CatapultUser;
 import com.catapult.app.example.beans.User;
 import com.catapult.app.example.configuration.EndpointsConfiguration;
 import com.catapult.app.example.configuration.UserConfiguration;
-import com.catapult.app.example.constants.ParametersConstants;
 import com.catapult.app.example.exceptions.MissingFieldsException;
 import com.catapult.app.example.exceptions.UserAlreadyExistsException;
 import com.catapult.app.example.exceptions.UserNotFoundException;
@@ -33,24 +29,27 @@ public class UserServices {
     private final ConcurrentHashMap<String, User> users = new ConcurrentHashMap<String, User>();
 
     private final ConcurrentHashMap<String, CatapultUser> catapultUserData = new ConcurrentHashMap<String, CatapultUser>();
-    
+
     private final static Logger LOG = Logger.getLogger(UserServices.class);
 
     @Autowired
     private DomainServices domainServices;
-    
+
     @Autowired
     private EndpointServices endpointServices;
-    
+
     @Autowired
     private UserConfiguration userConfiguration;
-    
+
     @Autowired
     private EndpointsConfiguration endpointsConfiguration;
-    
+
     @Autowired
     private PhoneNumberServices phoneServices;
-    
+
+    @Autowired
+    private ApplicationServices applicationServices;
+
     public User createUser(final UserAdapter userAdapter) throws MissingFieldsException, UserAlreadyExistsException,
             AppPlatformException, ParseException, Exception {
 
@@ -83,7 +82,7 @@ public class UserServices {
             try {
                 userDomain = domainServices.createDomain(userDomainName, userDomainDescription);
                 currentCatapultUser.setDomain(userDomain);
-            } catch(AppPlatformException e) {
+            } catch(final AppPlatformException e) {
                 LOG.error(String.format("Could not create a Domain: %s", e));
                 throw e;
             }
@@ -91,43 +90,37 @@ public class UserServices {
         
         // Allocate a number
         final List<PhoneNumber> phoneNumbers = phoneServices.searchAndAllocateANumber(1, "469", false);
-        
+
         // Create a new Application
-        final Map<String, Object> applicationParameters = new HashMap<String, Object>();
-        final String userApplicationDescription = "Sandbox created Application for user " + userAdapter.getUserName();
-        // Define the application description
-        applicationParameters.put(ParametersConstants.NAME, userApplicationDescription);
-        // Define the callback URL
-        applicationParameters.put(ParametersConstants.INCOMING_CALL_URL, endpointsConfiguration.getCallbacksBaseUrl());
-        final Application createdApplication = Application.create(applicationParameters);
-        
+        final Application createdApplication = applicationServices.create(userAdapter.getUserName());
+
         // Associate the number to the application
         phoneNumbers.get(0).setApplicationId(createdApplication.getId());
         phoneServices.updatePhoneNumber(phoneNumbers.get(0));
-        
+
         // Create a new Endpoint.
         final String userEndpointName = "uep-" + RandomStringUtils.randomAlphanumeric(12);
         final String userEndpointDescription = "Sandbox created Endpoint for user " + userAdapter.getUserName();
-        
+
         Endpoint createdEndpoint;
-        
         try {
             createdEndpoint = endpointServices.createEndpoint(currentCatapultUser.getDomain().getId(), userEndpointName, 
                     userAdapter.getPassword(), userEndpointDescription);
-        } catch(AppPlatformException e) {
+            //Add the application ID to the endpoint.
+            endpointServices.updateEndpoint(createdEndpoint, userAdapter.getPassword(), createdApplication.getId());
+        } catch(final AppPlatformException e) {
             LOG.error(String.format("Could not create a Domain: %s", e));
             throw e;
         }
-        
-        newUser.setDomain(new com.catapult.app.example.beans.Domain(currentCatapultUser.getDomain()));
-        newUser.setEndpoint(new com.catapult.app.example.beans.Endpoint(createdEndpoint));
-        // newUser.setPhoneNumber(new com.catapult.app.example.beans.PhoneNumber(phoneNumbers.get(0)));
+        com.catapult.app.example.beans.Endpoint endpoint = new com.catapult.app.example.beans.Endpoint(createdEndpoint);
+        endpoint.setApplicationId(createdApplication.getId());
+        newUser.setEndpoint(endpoint);
         newUser.setNumber(phoneNumbers.get(0).getNumber());
-        
+
         users.putIfAbsent(userAdapter.getUserName(), newUser);
         currentCatapultUser.getPhoneNumbers().addAll(phoneNumbers);
         catapultUserData.putIfAbsent(userConfiguration.getUserId(), currentCatapultUser);
-        
+
         newUser.setPassword(null);
         return newUser;
     }
@@ -162,19 +155,16 @@ public class UserServices {
     /**
      * Delete the user.
      * @param userName the user name.
-     * @throws UserNotFoundException 
-     * @throws IOException 
-     * @throws AppPlatformException 
      * @throws Exception
      */
-    public void deleteUser(final String userName) throws UserNotFoundException, AppPlatformException, IOException {
+    public void deleteUser(final String userName) throws Exception {
         final User deletedUser = users.remove(userName);
         if(deletedUser == null) {
             //User not found
             throw new UserNotFoundException(userName);
         }
-        
-        //delete the number
+
+        //Remove the number
         final CatapultUser currentCatapultUser = catapultUserData.get(userConfiguration.getUserId());
         PhoneNumber deletedNumber = null;
         for(final PhoneNumber currentnumber : currentCatapultUser.getPhoneNumbers()) {
@@ -184,9 +174,17 @@ public class UserServices {
             }
         }
         currentCatapultUser.getPhoneNumbers().remove(deletedNumber);
-        
-        //delete the user endpoint
+        //Remove the application
+        applicationServices.findApplication(deletedUser.getEndpoint().getApplicationId());
+        //Remove the user endpoint
         endpointServices.deleteEndpoint(deletedUser.getDomain().getId(), deletedUser.getEndpoint().getId());
+        
+        //If there is no users we should remove the domain
+        if(users.size() == 0) {
+            //Delete the domain
+            domainServices.deleteDomain(currentCatapultUser.getDomain().getId());
+            currentCatapultUser.setDomain(null);
+        }
     }
 
     /**

@@ -68,7 +68,7 @@ public class CallbackServices {
     }
 
     private void createCallFromEndpoint(final CallbackAdapter callbackAdapter) {
-
+        //TODO: lvivo
     }
 
     private void createCallToEndpoint(final CallbackAdapter callbackAdapter) {
