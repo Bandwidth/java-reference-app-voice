@@ -31,13 +31,11 @@ public class UserConfiguration {
 
     @PostConstruct
     public void userConfiguration() {
-        System.setProperty("com.bandwidth.userId", userId);
-        System.setProperty("com.bandwidth.apiToken", userApiKey);
-        System.setProperty("com.bandwidth.apiSecret", userApiSecret);
-        System.setProperty("com.bandwidth.apiEndpoint", apiUrl);;
-        System.setProperty("com.bandwidth.apiVersion", apiVersion);
+        BandwidthClient bandwidthClient = BandwidthClient.getInstance();
+        bandwidthClient.setCredentials(userId, userApiKey, userApiSecret);
+        bandwidthClient.setEndpointandVersion(apiUrl, apiVersion);
     }
-    
+
     /**
      * @return the userId
      */
