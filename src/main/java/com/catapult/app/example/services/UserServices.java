@@ -125,7 +125,7 @@ public class UserServices {
      * Get an user.
      * @param userName the user name to find.
      * @return the found user.
-     * @throws UserNotFoundExceptionEndpointsConfiguration
+     * @throws UserNotFoundException
      */
     public User getUser(final String userName) throws UserNotFoundException {
         final User user = users.get(userName);

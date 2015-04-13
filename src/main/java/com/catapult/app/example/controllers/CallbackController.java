@@ -30,7 +30,6 @@ public class CallbackController {
     @RequestMapping(method = RequestMethod.POST, value = "/{userName}/callback", headers = "Content-Type=application/json")
     public void receiveCallback(@RequestBody final CallbackAdapter callbackAdapter,
                                 @PathVariable("userName") final String userName, final HttpServletRequest request) {
-        callbackServices.handleCallback(callbackAdapter, userName, endpointsConfiguration.getAppBaseUrl(request.getScheme(), 
-                request.getServerName(), request.getServerPort(), request.getContextPath()));
+        callbackServices.handleCallback(callbackAdapter, userName, endpointsConfiguration.getAppBaseUrl(request));
     }
 }

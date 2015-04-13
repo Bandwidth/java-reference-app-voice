@@ -44,7 +44,6 @@ public class UsersController {
     @Autowired
     private EndpointsConfiguration endpointsConfiguration;
 
-    
     @RequestMapping(method = RequestMethod.POST, headers = { "Content-Type=application/json" })
     public @ResponseBody User createUser(@RequestBody final UserAdapter userAdapter, final HttpServletRequest request) 
             throws AppPlatformException, ParseException, Exception {
@@ -52,8 +51,7 @@ public class UsersController {
         LOG.info(String.format("Create user: userName %s", userAdapter.getUserName()));
         User user;
         try {
-            user = userServices.createUser(userAdapter, endpointsConfiguration.getAppBaseUrl(request.getScheme(), 
-                    request.getServerName(), request.getServerPort(), request.getContextPath()));
+            user = userServices.createUser(userAdapter, endpointsConfiguration.getAppBaseUrl(request));
             LOG.info(String.format("User successfully created: %s", userAdapter.getUserName()));
             return user;
         } catch (final MissingFieldsException e) {
