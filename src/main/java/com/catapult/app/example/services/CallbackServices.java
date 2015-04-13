@@ -117,12 +117,14 @@ public class CallbackServices {
         Map<String, BridgeDetails> bridgeDetailsMap = bridgeMap.get(userName);
         if (bridgeDetailsMap == null) {
             LOG.error("No incoming call mapped to create bridge for user " + userName);
+            return;
         }
 
         BridgeDetails bridgeDetails = bridgeDetailsMap.get(event.getProperty("callId"));
         if (bridgeDetails == null) {
             LOG.error("No incoming call mapped to create bridge for user " + userName
                     + " based on call " + event.getProperty("callId"));
+            return;
         }
 
         // Add the outgoing call event when Answered
@@ -146,13 +148,30 @@ public class CallbackServices {
             return;
         }
 
+        if (event.getProperty("callId") == null) {
+            LOG.error("Could not find the callId on event " + event);
+            return;
+        }
+
         Map<String, BridgeDetails> bridgeDetailsMap = bridgeMap.get(userName);
         if (bridgeDetailsMap == null) {
             LOG.error("No incoming call mapped to create bridge for user " + userName);
+            return;
         }
 
-        // TODO:
+        for (BridgeDetails bridgeDetails : bridgeDetailsMap.values()) {
 
+            if (bridgeDetails.getIncomingCall() != null
+                    && event.getProperty("callId").equals(bridgeDetails.getIncomingCall().getCallId())) {
+                bridgeDetails.getIncomingCall().addEvent(event);
+                break;
+
+            } else if (bridgeDetails.getOutgoingCall() != null
+                    && event.getProperty("callId").equals(bridgeDetails.getOutgoingCall().getCallId())) {
+                bridgeDetails.getOutgoingCall().addEvent(event);
+                break;
+            }
+        }
     }
 
 }
