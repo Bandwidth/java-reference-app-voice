@@ -17,7 +17,6 @@ import com.bandwidth.sdk.model.PhoneNumber;
 import com.catapult.app.example.adapters.UserAdapter;
 import com.catapult.app.example.beans.CatapultUser;
 import com.catapult.app.example.beans.User;
-import com.catapult.app.example.configuration.EndpointsConfiguration;
 import com.catapult.app.example.configuration.UserConfiguration;
 import com.catapult.app.example.exceptions.MissingFieldsException;
 import com.catapult.app.example.exceptions.UserAlreadyExistsException;
@@ -42,15 +41,12 @@ public class UserServices {
     private UserConfiguration userConfiguration;
 
     @Autowired
-    private EndpointsConfiguration endpointsConfiguration;
-
-    @Autowired
     private PhoneNumberServices phoneServices;
 
     @Autowired
     private ApplicationServices applicationServices;
 
-    public User createUser(final UserAdapter userAdapter) throws MissingFieldsException, UserAlreadyExistsException,
+    public User createUser(final UserAdapter userAdapter, final String baseAppUrl) throws MissingFieldsException, UserAlreadyExistsException,
             AppPlatformException, ParseException, Exception {
 
         // Validate the adapter fields.
@@ -87,12 +83,12 @@ public class UserServices {
                 throw e;
             }
         }
-        
+
         // Allocate a number
         final List<PhoneNumber> phoneNumbers = phoneServices.searchAndAllocateANumber(1, "469", false);
 
         // Create a new Application
-        final Application createdApplication = applicationServices.create(userAdapter.getUserName());
+        final Application createdApplication = applicationServices.create(userAdapter.getUserName(), baseAppUrl);
 
         // Associate the number to the application
         phoneNumbers.get(0).setApplicationId(createdApplication.getId());
@@ -129,7 +125,7 @@ public class UserServices {
      * Get an user.
      * @param userName the user name to find.
      * @return the found user.
-     * @throws UserNotFoundException
+     * @throws UserNotFoundExceptionEndpointsConfiguration
      */
     public User getUser(final String userName) throws UserNotFoundException {
         final User user = users.get(userName);

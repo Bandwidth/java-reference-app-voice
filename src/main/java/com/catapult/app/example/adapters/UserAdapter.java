@@ -4,13 +4,15 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.catapult.app.example.constants.ErrorMessages;
 import com.catapult.app.example.exceptions.MissingFieldsException;
 
 public class UserAdapter implements Serializable {
 
     private static final long serialVersionUID = 869181531769762934L;
-    
+
     private String userName;
     private String password;
 
@@ -56,11 +58,11 @@ public class UserAdapter implements Serializable {
     public void validate() throws MissingFieldsException {
         
         final Map<String, String> errors = new HashMap<String, String>();
-        if(this.userName == null) {
+        if(StringUtils.isBlank(this.userName)) {
             errors.put("name", ErrorMessages.MISSING_NAME);
         }
         
-        if(this.password == null) {
+        if(StringUtils.isBlank(this.password)) {
             errors.put("password", ErrorMessages.MISSING_PASSWORD);
         }
         

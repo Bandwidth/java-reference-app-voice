@@ -1,24 +1,21 @@
 package com.catapult.app.example.services;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.bandwidth.sdk.model.Call;
-import com.bandwidth.sdk.model.Bridge;
-import com.catapult.app.example.beans.CallDetails;
-import com.catapult.app.example.beans.User;
-import com.catapult.app.example.configuration.EndpointsConfiguration;
-import com.catapult.app.example.configuration.UserConfiguration;
-import com.catapult.app.example.exceptions.UserNotFoundException;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.bandwidth.sdk.model.Bridge;
+import com.bandwidth.sdk.model.Call;
 import com.catapult.app.example.adapters.CallbackAdapter;
 import com.catapult.app.example.beans.BridgeDetails;
+import com.catapult.app.example.beans.CallDetails;
+import com.catapult.app.example.beans.User;
+import com.catapult.app.example.configuration.EndpointsConfiguration;
+import com.catapult.app.example.exceptions.UserNotFoundException;
 
 @Service
 public class CallbackServices {
@@ -39,40 +36,40 @@ public class CallbackServices {
      * 
      * @param callbackAdapter
      */
-    public void handleCallback(final CallbackAdapter callbackAdapter, final String userName) {
+    public void handleCallback(final CallbackAdapter callbackAdapter, final String userName, final String baseAppUrl) {
 
         if ("incomingcall".equalsIgnoreCase(callbackAdapter.getEventType())) {
 
             // Case Incoming call from Endpoint
             if (callbackAdapter.getFrom() != null) {
                 if (sipPattern.matcher(callbackAdapter.getFrom()).find()) {
-                    createCallFromEndpoint(callbackAdapter, userName);
+                    createCallFromEndpoint(callbackAdapter, userName, baseAppUrl);
                     return;
                 }
             }
             // Case Incoming call to Endpoint
             else if (callbackAdapter.getTo() != null) {
                 if (sipPattern.matcher(callbackAdapter.getTo()).find()) {
-                    createCallToEndpoint(callbackAdapter, userName);
+                    createCallToEndpoint(callbackAdapter, userName, baseAppUrl);
                     return;
                 }
             }
             LOG.info("Received incoming call FROM or TO NON Mobile Client");
 
         } else if ("answer".equalsIgnoreCase(callbackAdapter.getEventType())) {
-            bridgeCreatedCalls(callbackAdapter, userName);
+            bridgeCreatedCalls(callbackAdapter, userName, baseAppUrl);
 
         } else {
             // TODO: Should we save the event by call Id
         }
     }
 
-    private void createCallFromEndpoint(final CallbackAdapter callbackAdapter, final String userName) {
+    private void createCallFromEndpoint(final CallbackAdapter callbackAdapter, final String userName, final String baseAppUrl) {
         try {
             User user = userServices.getUser(userName);
 
             Call call = Call.create(callbackAdapter.getTo(), user.getNumber(),
-                    endpointsConfiguration.getCallbacksBaseUrl(), userName);
+                    endpointsConfiguration.getCallbacksBaseUrl(baseAppUrl, userName), userName);
 
             Map<String, BridgeDetails> bridgeDetailsMap = bridgeMap.get(user.getUserName());
             if (bridgeDetailsMap == null) {
@@ -100,12 +97,12 @@ public class CallbackServices {
         }
     }
 
-    private void createCallToEndpoint(final CallbackAdapter callbackAdapter, final String userName) {
+    private void createCallToEndpoint(final CallbackAdapter callbackAdapter, final String userName, final String baseAppUrl) {
         try {
             User user = userServices.getUser(userName);
 
             Call call = Call.create(user.getEndpoint().getSipUri(), user.getNumber(),
-                    endpointsConfiguration.getCallbacksBaseUrl(), userName);
+                    endpointsConfiguration.getCallbacksBaseUrl(baseAppUrl, userName), userName);
 
             Map<String, BridgeDetails> bridgeDetailsMap = bridgeMap.get(user.getUserName());
             if (bridgeDetailsMap == null) {
@@ -133,7 +130,7 @@ public class CallbackServices {
         }
     }
 
-    private void bridgeCreatedCalls(final CallbackAdapter callbackAdapter, final String userName) {
+    private void bridgeCreatedCalls(final CallbackAdapter callbackAdapter, final String userName, final String baseAppUrl) {
 
         if (userName == null) {
             LOG.error("Could not find the username on call tag for call " + callbackAdapter.getCallId());
@@ -162,5 +159,4 @@ public class CallbackServices {
             LOG.error("Bridge could not be created for " + bridgeDetails);
         }
     }
-
 }

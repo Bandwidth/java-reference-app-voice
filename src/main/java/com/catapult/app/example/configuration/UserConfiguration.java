@@ -3,7 +3,6 @@ package com.catapult.app.example.configuration;
 import javax.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import com.bandwidth.sdk.BandwidthClient;
@@ -26,9 +25,6 @@ public class UserConfiguration {
     @Value(value = "${sandbox.api.version}")
     private String apiVersion;
    
-    @Value(value = "${sandbox.base.url}")
-    private String sandboxBaseUrl;
-
     @PostConstruct
     public void userConfiguration() {
         BandwidthClient bandwidthClient = BandwidthClient.getInstance();
@@ -42,12 +38,4 @@ public class UserConfiguration {
     public String getUserId() {
         return userId;
     }
-
-    /**
-     * @return the sandboxBaseUrl
-     */
-    public String getSandboxBaseUrl() {
-        return sandboxBaseUrl;
-    }
-
 }

@@ -2,6 +2,8 @@ package com.catapult.app.example.controllers;
 
 import java.io.IOException;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.apache.log4j.Logger;
 import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.bandwidth.sdk.AppPlatformException;
 import com.catapult.app.example.adapters.UserAdapter;
 import com.catapult.app.example.beans.User;
+import com.catapult.app.example.configuration.EndpointsConfiguration;
 import com.catapult.app.example.exceptions.MissingFieldsException;
 import com.catapult.app.example.exceptions.UserAlreadyExistsException;
 import com.catapult.app.example.exceptions.UserNotFoundException;
@@ -34,18 +37,23 @@ public class UsersController {
 
     @Autowired
     private DomainServices domainServices;
-    
+
     @Autowired
     private EndpointServices endpointServices;
+
+    @Autowired
+    private EndpointsConfiguration endpointsConfiguration;
+
     
     @RequestMapping(method = RequestMethod.POST, headers = { "Content-Type=application/json" })
-    public @ResponseBody User createUser(@RequestBody final UserAdapter userAdapter) 
+    public @ResponseBody User createUser(@RequestBody final UserAdapter userAdapter, final HttpServletRequest request) 
             throws AppPlatformException, ParseException, Exception {
         
         LOG.info(String.format("Create user: userName %s", userAdapter.getUserName()));
         User user;
         try {
-            user = userServices.createUser(userAdapter);
+            user = userServices.createUser(userAdapter, endpointsConfiguration.getAppBaseUrl(request.getScheme(), 
+                    request.getServerName(), request.getServerPort(), request.getContextPath()));
             LOG.info(String.format("User successfully created: %s", userAdapter.getUserName()));
             return user;
         } catch (final MissingFieldsException e) {
