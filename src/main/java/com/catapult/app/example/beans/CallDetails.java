@@ -1,6 +1,6 @@
 package com.catapult.app.example.beans;
 
-import com.catapult.app.example.adapters.CallbackAdapter;
+import com.bandwidth.sdk.model.events.Event;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -12,7 +12,7 @@ public class CallDetails implements Serializable {
 
     private String callId;
 
-    private List<CallbackAdapter> callbacks = new ArrayList<>();
+    private List<Event> events = new ArrayList<>();
 
     public CallDetails(String callId) {
         this.callId = callId;
@@ -22,23 +22,23 @@ public class CallDetails implements Serializable {
         return callId;
     }
 
-    public List<CallbackAdapter> getCallbacks() {
-        return callbacks;
+    public List<Event> getEvents() {
+        return events;
     }
 
-    public void addCallback(CallbackAdapter callback) {
-        this.callbacks.add(callback);
+    public void addEvent(Event event) {
+        this.events.add(event);
     }
 
-    public void setCallbacks(List<CallbackAdapter> callbacks) {
-        this.callbacks = callbacks;
+    public void setEvents(List<Event> events) {
+        this.events = events;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("CallDetails{");
         sb.append("callId='").append(callId).append('\'');
-        sb.append(", callbacks=").append(callbacks);
+        sb.append(", events=").append(events);
         sb.append('}');
         return sb.toString();
     }

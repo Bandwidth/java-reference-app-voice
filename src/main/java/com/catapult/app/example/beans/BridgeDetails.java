@@ -8,9 +8,9 @@ public class BridgeDetails implements Serializable {
 
     private String bridgeId;
 
-    private CallDetails call1;
+    private CallDetails incomingCall;
 
-    private CallDetails call2;
+    private CallDetails outgoingCall;
 
     public String getBridgeId() {
         return bridgeId;
@@ -21,39 +21,39 @@ public class BridgeDetails implements Serializable {
     }
 
     /**
-     * @return the call1
+     * @return the incomingCall
      */
-    public CallDetails getCall1() {
-        return call1;
+    public CallDetails getIncomingCall() {
+        return incomingCall;
     }
 
     /**
-     * @return the call2
+     * @return the outgoingCall
      */
-    public CallDetails getCall2() {
-        return call2;
+    public CallDetails getOutgoingCall() {
+        return outgoingCall;
     }
 
     /**
-     * @param call1 the call1 to set
+     * @param incomingCall the incomingCall to set
      */
-    public void setCall1(CallDetails call1) {
-        this.call1 = call1;
+    public void setIncomingCall(CallDetails incomingCall) {
+        this.incomingCall = incomingCall;
     }
 
     /**
-     * @param call2 the call2 to set
+     * @param outgoingCall the outgoingCall to set
      */
-    public void setCall2(CallDetails call2) {
-        this.call2 = call2;
+    public void setOutgoingCall(CallDetails outgoingCall) {
+        this.outgoingCall = outgoingCall;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("BridgeDetails{");
         sb.append("bridgeId='").append(bridgeId).append('\'');
-        sb.append(", call1=").append(call1);
-        sb.append(", call2=").append(call2);
+        sb.append(", incomingCall=").append(incomingCall);
+        sb.append(", outgoingCall=").append(outgoingCall);
         sb.append('}');
         return sb.toString();
     }

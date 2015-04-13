@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
-import com.catapult.app.example.adapters.CallbackAdapter;
 import com.catapult.app.example.services.CallbackServices;
 import com.catapult.app.example.util.URLUtil;
 
@@ -22,11 +21,12 @@ public class CallbackController {
 
     /**
      * Resource to receive the user callback requests.
-     * @param callbackAdapter the callback adapter with the data.
+     * @param event the callback event with the data.
      */
     @RequestMapping(method = RequestMethod.POST, value = "/{userName}/callback", headers = "Content-Type=application/json")
-    public void receiveCallback(@RequestBody final CallbackAdapter callbackAdapter,
+    public void receiveCallback(@RequestBody final String event,
                                 @PathVariable("userName") final String userName, final HttpServletRequest request) {
-        callbackServices.handleCallback(callbackAdapter, userName, URLUtil.getAppBaseUrl(request));
+        callbackServices.handleCallback(event, userName, URLUtil.getAppBaseUrl(request));
     }
+
 }
