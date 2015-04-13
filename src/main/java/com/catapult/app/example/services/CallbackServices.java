@@ -7,6 +7,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.bandwidth.sdk.model.Call;
+import com.bandwidth.sdk.model.Bridge;
 import com.catapult.app.example.beans.CallDetails;
 import com.catapult.app.example.beans.User;
 import com.catapult.app.example.configuration.EndpointsConfiguration;
@@ -26,7 +27,7 @@ public class CallbackServices {
 
     private static final Pattern sipPattern = Pattern.compile("^sip:.+@.+");
 
-    private final Map<String, Map<String, BridgeDetails>> bridgeMap = new ConcurrentHashMap<>();
+    private static final Map<String, Map<String, BridgeDetails>> bridgeMap = new ConcurrentHashMap<>();
 
     @Autowired
     private UserServices userServices;
@@ -38,45 +39,46 @@ public class CallbackServices {
      * 
      * @param callbackAdapter
      */
-    public void handleCallback(final CallbackAdapter callbackAdapter) {
-        
+    public void handleCallback(final CallbackAdapter callbackAdapter, final String userName) {
+
         if ("incomingcall".equalsIgnoreCase(callbackAdapter.getEventType())) {
 
             // Case Incoming call from Endpoint
             if (callbackAdapter.getFrom() != null) {
                 if (sipPattern.matcher(callbackAdapter.getFrom()).find()) {
-                    createCallFromEndpoint(callbackAdapter);
+                    createCallFromEndpoint(callbackAdapter, userName);
                     return;
                 }
             }
+
             // Case Incoming call to Endpoint
             else if (callbackAdapter.getTo() != null) {
                 if (sipPattern.matcher(callbackAdapter.getTo()).find()) {
 
-                    createCallToEndpoint(callbackAdapter);
+                    createCallToEndpoint(callbackAdapter, userName);
                     return;
                 }
             }
             LOG.info("Received incoming call from NON Mobile Client");
 
         } else if ("answer".equalsIgnoreCase(callbackAdapter.getEventType())) {
-            bridgeCreatedCalls(callbackAdapter);
+            bridgeCreatedCalls(callbackAdapter, userName);
 
         } else {
-            // Save the event by call Id
+            // TODO: Should we save the event by call Id
         }
     }
 
-    private void createCallFromEndpoint(final CallbackAdapter callbackAdapter) {
+    private void createCallFromEndpoint(final CallbackAdapter callbackAdapter, final String userName) {
         //TODO: lvivo
     }
 
-    private void createCallToEndpoint(final CallbackAdapter callbackAdapter) {
+    private void createCallToEndpoint(final CallbackAdapter callbackAdapter, final String userName) {
         try {
-            User user = userServices.getUserByEndpoint(callbackAdapter.getTo());
+            User user = userServices.getUser(userName);
 
             Call call = Call.create(user.getEndpoint().getSipUri(), user.getNumber(),
-                    endpointsConfiguration.getCallbacksBaseUrl(), user.getUserName());
+                    endpointsConfiguration.getCallbacksBaseUrl(), userName);
 
             Map<String, BridgeDetails> bridgeDetailsMap = bridgeMap.get(user.getUserName());
             if (bridgeDetailsMap == null) {
@@ -104,13 +106,34 @@ public class CallbackServices {
         }
     }
 
-    private void bridgeCreatedCalls(final CallbackAdapter callbackAdapter) {
+    private void bridgeCreatedCalls(final CallbackAdapter callbackAdapter, final String userName) {
 
-    }
+        if (userName == null) {
+            LOG.error("Could not find the username on call tag for call " + callbackAdapter.getCallId());
+            return;
+        }
 
-    private String findCallbackUser(final CallbackAdapter callbackAdapter) {
+        Map<String, BridgeDetails> bridgeDetailsMap = bridgeMap.get(userName);
+        if (bridgeDetailsMap == null) {
+            LOG.error("No incoming call mapped to create bridge for user " + callbackAdapter.getTag());
+        }
 
-        return null;
+        BridgeDetails bridgeDetails = bridgeDetailsMap.get(callbackAdapter.getCallId());
+        if (bridgeDetails == null) {
+            LOG.error("No incoming call mapped to create bridge for user " + callbackAdapter.getTag()
+                    + " based on call " + callbackAdapter.getCallId());
+        }
+
+        bridgeDetails.getCall2().addCallback(callbackAdapter);
+
+        try {
+            Bridge bridge = Bridge.create(bridgeDetails.getCall1().getCallId(),
+                    bridgeDetails.getCall2().getCallId());
+
+            bridgeDetails.setBridgeId(bridge.getId());
+        } catch (Exception e) {
+            LOG.error("Bridge could not be created for " + bridgeDetails);
+        }
     }
 
 }

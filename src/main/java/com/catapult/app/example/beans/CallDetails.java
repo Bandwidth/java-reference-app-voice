@@ -33,4 +33,13 @@ public class CallDetails implements Serializable {
     public void setCallbacks(List<CallbackAdapter> callbacks) {
         this.callbacks = callbacks;
     }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("CallDetails{");
+        sb.append("callId='").append(callId).append('\'');
+        sb.append(", callbacks=").append(callbacks);
+        sb.append('}');
+        return sb.toString();
+    }
 }
