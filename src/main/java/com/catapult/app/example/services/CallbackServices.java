@@ -14,8 +14,8 @@ import com.catapult.app.example.adapters.CallbackAdapter;
 import com.catapult.app.example.beans.BridgeDetails;
 import com.catapult.app.example.beans.CallDetails;
 import com.catapult.app.example.beans.User;
-import com.catapult.app.example.configuration.EndpointsConfiguration;
 import com.catapult.app.example.exceptions.UserNotFoundException;
+import com.catapult.app.example.util.URLUtil;
 
 @Service
 public class CallbackServices {
@@ -28,9 +28,6 @@ public class CallbackServices {
 
     @Autowired
     private UserServices userServices;
-
-    @Autowired
-    private EndpointsConfiguration endpointsConfiguration;
 
     /**
      * 
@@ -69,7 +66,7 @@ public class CallbackServices {
             User user = userServices.getUser(userName);
 
             Call call = Call.create(callbackAdapter.getTo(), user.getNumber(),
-                    endpointsConfiguration.getCallbacksBaseUrl(baseAppUrl, userName), userName);
+                    URLUtil.getCallbacksBaseUrl(baseAppUrl, userName), userName);
 
             Map<String, BridgeDetails> bridgeDetailsMap = bridgeMap.get(user.getUserName());
             if (bridgeDetailsMap == null) {
@@ -102,7 +99,7 @@ public class CallbackServices {
             User user = userServices.getUser(userName);
 
             Call call = Call.create(user.getEndpoint().getSipUri(), user.getNumber(),
-                    endpointsConfiguration.getCallbacksBaseUrl(baseAppUrl, userName), userName);
+                    URLUtil.getCallbacksBaseUrl(baseAppUrl, userName), userName);
 
             Map<String, BridgeDetails> bridgeDetailsMap = bridgeMap.get(user.getUserName());
             if (bridgeDetailsMap == null) {

@@ -7,18 +7,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.bandwidth.sdk.model.Application;
-import com.catapult.app.example.configuration.EndpointsConfiguration;
 import com.catapult.app.example.configuration.UserConfiguration;
 import com.catapult.app.example.constants.ParametersConstants;
+import com.catapult.app.example.util.URLUtil;
 
 @Service
 public class ApplicationServices {
 
     @Autowired
     private UserConfiguration userConfiguration;
-    
-    @Autowired
-    private EndpointsConfiguration endpointsConfiguration;
     
     public Application create(final String userName, final String baseAppUrl) throws Exception {
         //Create a new Application
@@ -28,7 +25,7 @@ public class ApplicationServices {
         applicationParameters.put(ParametersConstants.NAME, userApplicationDescription);
         //Define the callback URL
         applicationParameters.put(ParametersConstants.INCOMING_CALL_URL,
-                endpointsConfiguration.getCallbacksBaseUrl(baseAppUrl, userName));
+                URLUtil.getCallbacksBaseUrl(baseAppUrl, userName));
         return Application.create(applicationParameters);
     }
     
