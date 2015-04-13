@@ -148,6 +148,17 @@ public class UserServices {
         return user;
     }
 
+    public User getUserByEndpoint(final String sipUri) throws UserNotFoundException {
+        if (sipUri != null) {
+            for (User user : users.values()) {
+                if (sipUri.equalsIgnoreCase(user.getEndpoint().getSipUri())) {
+                    return user;
+                }
+            }
+        }
+        throw new UserNotFoundException(sipUri);
+    }
+
     /**
      * Delete the user.
      * @param userName the user name.

@@ -14,12 +14,12 @@ public class CallDetails implements Serializable {
 
     private List<CallbackAdapter> callbacks = new ArrayList<>();
 
-    public String getCallId() {
-        return callId;
+    public CallDetails(String callId) {
+        this.callId = callId;
     }
 
-    public void setCallId(String callId) {
-        this.callId = callId;
+    public String getCallId() {
+        return callId;
     }
 
     public List<CallbackAdapter> getCallbacks() {
