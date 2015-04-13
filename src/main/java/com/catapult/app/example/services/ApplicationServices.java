@@ -30,4 +30,14 @@ public class ApplicationServices {
         applicationParameters.put(ParametersConstants.INCOMING_CALL_URL, endpointsConfiguration.getCallbacksBaseUrl());
         return Application.create(applicationParameters);
     }
+    
+    /**
+     * 
+     * @param applicationId the application to find.
+     * @return the found application.
+     * @throws Exception 
+     */
+    public Application findApplication(final String applicationId) throws Exception {
+        return Application.get(applicationId);
+    }
 }

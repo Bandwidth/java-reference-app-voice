@@ -12,6 +12,7 @@ public class Endpoint implements Serializable {
     private String id;
     private String name;
     private String domainId;
+    private String applicationId;
     private boolean enabled;
     private String sipUri;
     private Credentials credentials;
@@ -100,5 +101,19 @@ public class Endpoint implements Serializable {
      */
     public void setCredentials(final Credentials credentials) {
         this.credentials = credentials;
+    }
+
+    /**
+     * @return the applicationId
+     */
+    public String getApplicationId() {
+        return applicationId;
+    }
+
+    /**
+     * @param applicationId the applicationId to set
+     */
+    public void setApplicationId(final String applicationId) {
+        this.applicationId = applicationId;
     }
 }

@@ -75,7 +75,7 @@ public class UsersController {
 
     @RequestMapping(method = RequestMethod.DELETE, value = "/{userName}", produces = MediaType.APPLICATION_JSON_VALUE)
     public @ResponseBody String deleteUser(@PathVariable("userName") final String userName) 
-            throws UserNotFoundException, AppPlatformException, IOException {
+            throws UserNotFoundException, AppPlatformException, Exception, IOException {
         LOG.info(String.format("Delete user: userId %s", userName));
         userServices.deleteUser(userName);
         return "Deleted userName " + userName;

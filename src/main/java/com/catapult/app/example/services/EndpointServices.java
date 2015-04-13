@@ -35,5 +35,17 @@ public class EndpointServices {
     public void deleteEndpoint(final String domainId, final String endpointId) throws AppPlatformException, IOException {
         Endpoint.delete(domainId, endpointId);
     }
+    
+    /**
+     * Update an Endpoint
+     * @throws AppPlatformException 
+     * @throws ParseException 
+     * @throws Exception 
+     * @throws IOException
+     */
+    public void updateEndpoint(final Endpoint endpoint, final String endpointPassword, final String applicationId) 
+            throws AppPlatformException, ParseException, Exception, IOException {
+        Endpoint.update(endpoint.getDomainId(), endpoint.getId(), endpointPassword, applicationId, endpoint.isEnabled());
+    }
 
 }
