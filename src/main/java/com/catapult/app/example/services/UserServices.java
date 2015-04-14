@@ -111,7 +111,7 @@ public class UserServices {
         com.catapult.app.example.beans.Endpoint endpoint = new com.catapult.app.example.beans.Endpoint(createdEndpoint);
         endpoint.setApplicationId(createdApplication.getId());
         newUser.setEndpoint(endpoint);
-        newUser.setNumber(phoneNumbers.get(0).getNumber());
+        newUser.setPhoneNumber(phoneNumbers.get(0).getNumber());
 
         users.putIfAbsent(userAdapter.getUserName(), newUser);
         currentCatapultUser.getPhoneNumbers().addAll(phoneNumbers);
@@ -164,7 +164,7 @@ public class UserServices {
         final CatapultUser currentCatapultUser = catapultUserData.get(userConfiguration.getUserId());
         PhoneNumber deletedNumber = null;
         for(final PhoneNumber currentnumber : currentCatapultUser.getPhoneNumbers()) {
-            if(currentnumber.getNumber().equals(deletedUser.getNumber())) {
+            if(currentnumber.getNumber().equals(deletedUser.getPhoneNumber())) {
                 deletedNumber = currentnumber;
                 currentnumber.delete();
             }

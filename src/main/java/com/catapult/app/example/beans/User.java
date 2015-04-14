@@ -16,7 +16,7 @@ public class User implements Serializable {
     private Domain domain;
     private Endpoint endpoint;
     //private PhoneNumber phoneNumber;
-    private String number;
+    private String phoneNumber;
     private Application application;
     
     public User(){};
@@ -105,14 +105,14 @@ public class User implements Serializable {
     /**
      * @return the number
      */
-    public String getNumber() {
-        return number;
+    public String getPhoneNumber() {
+        return phoneNumber;
     }
 
     /**
      * @param number the number to set
      */
-    public void setNumber(final String number) {
-        this.number = number;
+    public void setPhoneNumber(final String number) {
+        this.phoneNumber = number;
     }
 }

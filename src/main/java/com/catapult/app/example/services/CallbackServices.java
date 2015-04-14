@@ -76,7 +76,7 @@ public class CallbackServices {
             User user = userServices.getUser(userName);
 
             // Create outgoing call using Bandwidth SDK
-            Call call = Call.create(event.getProperty("to"), user.getNumber(),
+            Call call = Call.create(event.getProperty("to"), user.getPhoneNumber(),
                     URLUtil.getCallbacksBaseUrl(baseAppUrl, userName), userName);
 
             Map<String, BridgeDetails> bridgeDetailsMap = bridgeMap.get(userName);
@@ -173,5 +173,4 @@ public class CallbackServices {
             }
         }
     }
-
 }
