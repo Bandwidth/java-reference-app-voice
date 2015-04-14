@@ -11,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -53,7 +55,9 @@ public class UsersController {
         try {
             user = userServices.createUser(userAdapter, URLUtil.getAppBaseUrl(request));
             LOG.info(String.format("User successfully created: %s", userAdapter.getUserName()));
-            return new ResponseEntity<User>(user, HttpStatus.CREATED);
+            MultiValueMap<String, String> headers = new LinkedMultiValueMap<String, String>();
+            headers.set("location", "/users/" + userAdapter.getUserName());
+            return new ResponseEntity<User>(user, headers, HttpStatus.CREATED);
         } catch (final MissingFieldsException e) {
             LOG.error(String.format("Missing fields to create user %s: %s", userAdapter.getUserName(), e));
             throw e;
