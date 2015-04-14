@@ -11,7 +11,7 @@ public class URLUtil {
      * @return the callbacks URL.
      */
     public static String getCallbacksBaseUrl(final String appBaseUrl, final String userName) {
-        return String.format("%s/%s/callback", appBaseUrl, userName);
+        return String.format("%s/users/%s/callback", appBaseUrl, userName);
     }
 
     /**
