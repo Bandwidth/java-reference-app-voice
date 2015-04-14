@@ -1,5 +1,6 @@
 package com.catapult.app.example.services;
 
+import java.text.MessageFormat;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
@@ -42,28 +43,24 @@ public class CallbackServices {
 
             if (event instanceof IncomingCallEvent) {
 
-                // Case Incoming call from Endpoint
+                // Case Incoming call from Endpoint to a PSTN number
                 if (event.getProperty("from") != null) {
                     if (sipPattern.matcher(event.getProperty("from")).find()) {
-                        createEndpointCall(event, userName, baseAppUrl);
+                        createCallFromEndpoint(event, userName, baseAppUrl);
                         return;
                     }
                 }
-                // Case Incoming call to Endpoint
+                // Case Incoming call from PSTN to a number associated to an Endpoint
                 else if (event.getProperty("to") != null) {
-                    if (sipPattern.matcher(event.getProperty("to")).find()) {
-                        createEndpointCall(event, userName, baseAppUrl);
+                        createCallToEndpoint(event, userName, baseAppUrl);
                         return;
-                    }
                 }
-                LOG.info("Received incoming call FROM or TO NON Mobile Client");
-
             } else if (event instanceof AnswerEvent) {
-                LOG.info("Call answered " + eventString);
+                LOG.info(MessageFormat.format("Call answered [{0}]", eventString));
                 bridgeCalls(event, userName);
 
             } else {
-                LOG.info("Received event for endpoint calls " + eventString);
+                LOG.info(MessageFormat.format("Received event for endpoint calls [{0}]", eventString));
                 storeCallsEvent(event, userName);
             }
         } catch (Exception e) {
@@ -71,20 +68,22 @@ public class CallbackServices {
         }
     }
 
-    private void createEndpointCall(final Event event, final String userName, final String baseAppUrl) {
+    private void createCallFromEndpoint(final Event event, final String userName, final String baseAppUrl) {
         try {
             User user = userServices.getUser(userName);
 
             // Create outgoing call using Bandwidth SDK
             Call call = Call.create(event.getProperty("to"), user.getPhoneNumber(),
-                    URLUtil.getCallbacksBaseUrl(baseAppUrl, userName), userName);
+                    URLUtil.getCallbacksBaseUrl(baseAppUrl, userName), null);
 
             if (call == null || call.getId() == null) {
-                LOG.error("Could not create outgoing call for incoming call " + event.getProperty("callId"));
+                LOG.error(MessageFormat.format("Could not create outgoing call for incoming call [{0}]",
+                        event.getProperty("callId")));
                 return;
             }
 
-            LOG.info("Created outgoing call " + call.getId() + " for incoming call " + event.getProperty("callId"));
+            LOG.info(MessageFormat.format("Created outgoing call [{0}] for incomingCall [{1}]",
+                    call.getId(), event.getProperty("callId")));
 
             Map<String, BridgeDetails> bridgeDetailsMap = bridgeMap.get(userName);
             if (bridgeDetailsMap == null) {
@@ -110,27 +109,73 @@ public class CallbackServices {
             LOG.error("User not found to create call", e);
 
         } catch (Exception e) {
-            LOG.error("Could not create outbound call based on call FROM/TO endpoint", e);
+            LOG.error("Could not create outbound call based on call FROM Endpoint", e);
+        }
+    }
+
+    private void createCallToEndpoint(final Event event, final String userName, final String baseAppUrl) {
+        try {
+            User user = userServices.getUser(userName);
+
+            // Create outgoing call using Bandwidth SDK
+            Call call = Call.create(user.getEndpoint().getSipUri(), event.getProperty("to"),
+                    URLUtil.getCallbacksBaseUrl(baseAppUrl, userName), null);
+
+            if (call == null || call.getId() == null) {
+                LOG.error(MessageFormat.format("Could not create outgoing call for incoming call [{0}]",
+                        event.getProperty("callId")));
+                return;
+            }
+
+            LOG.info(MessageFormat.format("Created outgoing call [{0}] for incomingCall [{1}]",
+                    call.getId(), event.getProperty("callId")));
+
+            Map<String, BridgeDetails> bridgeDetailsMap = bridgeMap.get(userName);
+            if (bridgeDetailsMap == null) {
+                bridgeDetailsMap = new ConcurrentHashMap<String, BridgeDetails>();
+                bridgeMap.put(userName, bridgeDetailsMap);
+            }
+
+            BridgeDetails bridgeDetails = new BridgeDetails();
+
+            CallDetails incomingCall = new CallDetails(event.getProperty("callId"));
+            incomingCall.addEvent(event);
+
+            // The events for outgoing call will be saved after AnswerEvent
+            CallDetails outgoingCall = new CallDetails(call.getId());
+
+            bridgeDetails.setIncomingCall(incomingCall);
+            bridgeDetails.setOutgoingCall(outgoingCall);
+
+            // Save the mapped bridge details based on outgoing call created
+            bridgeDetailsMap.put(call.getId(), bridgeDetails);
+
+        } catch (UserNotFoundException e) {
+            LOG.error("User not found to create call", e);
+
+        } catch (Exception e) {
+            LOG.error("Could not create outbound call based on call TO Endpoint", e);
         }
     }
 
     private void bridgeCalls(final Event event, final String userName) {
 
         if (userName == null) {
-            LOG.error("Could not find the username for call " + event.getProperty("callId"));
+            LOG.error(MessageFormat.format("Could not find the username for call [{0}]",
+                    event.getProperty("callId")));
             return;
         }
 
         Map<String, BridgeDetails> bridgeDetailsMap = bridgeMap.get(userName);
         if (bridgeDetailsMap == null) {
-            LOG.error("No incoming call mapped to create bridge for user " + userName);
+            LOG.error(MessageFormat.format("No incoming call mapped to create bridge for user [{0}]", userName));
             return;
         }
 
         BridgeDetails bridgeDetails = bridgeDetailsMap.get(event.getProperty("callId"));
         if (bridgeDetails == null) {
-            LOG.error("No outgoing call mapped to create bridge for user " + userName
-                    + " based on call " + event.getProperty("callId"));
+            LOG.error(MessageFormat.format("No outgoing call mapped to create bridge for user [{0}] based on call [{1}]",
+                    userName, event.getProperty("callId")));
             return;
         }
 
@@ -139,10 +184,19 @@ public class CallbackServices {
 
         try {
             // Bridge the incoming and outgoing calls using Bandwidth SDK
-            Bridge bridge = Bridge.create(bridgeDetails.getIncomingCall().getCallId(),
-                    bridgeDetails.getOutgoingCall().getCallId());
+            String incomingCallId = bridgeDetails.getIncomingCall().getCallId();
+            String outgoingCallId = bridgeDetails.getOutgoingCall().getCallId();
+            Bridge bridge = Bridge.create(incomingCallId, outgoingCallId);
+
+            if (bridge == null || bridge.getId() == null) {
+                LOG.error(MessageFormat.format("Could not bridge calls [{0}, {1}]", incomingCallId, outgoingCallId));
+            }
 
             bridgeDetails.setBridgeId(bridge.getId());
+
+            LOG.info(MessageFormat.format("Calls [{0}, {1}] successfully bridged by [{2}]",
+                    incomingCallId, outgoingCallId, bridge.getId()));
+
         } catch (Exception e) {
             LOG.error("Bridge could not be created for " + bridgeDetails);
         }
@@ -151,18 +205,19 @@ public class CallbackServices {
     private void storeCallsEvent(final Event event, final String userName) {
 
         if (userName == null) {
-            LOG.error("Could not find the username for call " + event.getProperty("callId"));
+            LOG.error(MessageFormat.format("Could not find the username for call [{0}]",
+                    event.getProperty("callId")));
             return;
         }
 
         if (event.getProperty("callId") == null) {
-            LOG.error("Could not find the callId on event " + event);
+            LOG.error(MessageFormat.format("Could not find the callId on event [{0}]", event));
             return;
         }
 
         Map<String, BridgeDetails> bridgeDetailsMap = bridgeMap.get(userName);
         if (bridgeDetailsMap == null) {
-            LOG.error("No incoming call mapped to create bridge for user " + userName);
+            LOG.error(MessageFormat.format("No incoming call mapped to create bridge for user [{0}]", userName));
             return;
         }
 

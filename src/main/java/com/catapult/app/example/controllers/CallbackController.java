@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import com.catapult.app.example.services.CallbackServices;
 import com.catapult.app.example.util.URLUtil;
 
+import java.text.MessageFormat;
+
 @Controller
 @RequestMapping("/users")
 public class CallbackController {
@@ -29,7 +31,7 @@ public class CallbackController {
     @RequestMapping(method = RequestMethod.POST, value = "/{userName}/callback", headers = "Content-Type=application/json")
     public void receiveCallback(@RequestBody final String event,
                                 @PathVariable("userName") final String userName, final HttpServletRequest request) {
-        LOG.info(String.format("Received callback for event: %s. UserName:  %s", event, userName));
+        LOG.info(MessageFormat.format("Received callback event [{0}] for userName [{1}]", event, userName));
         callbackServices.handleCallback(event, userName, URLUtil.getAppBaseUrl(request));
     }
 }
