@@ -72,39 +72,12 @@ public class CallbackServices {
         try {
             User user = userServices.getUser(userName);
 
-            // Create outgoing call using Bandwidth SDK
-            Call call = Call.create(event.getProperty("to"), user.getPhoneNumber(),
-                    URLUtil.getCallbacksBaseUrl(baseAppUrl, userName), null);
-
-            if (call == null || call.getId() == null) {
-                LOG.error(MessageFormat.format("Could not create outgoing call for incoming call [{0}]",
-                        event.getProperty("callId")));
-                return;
+            if (user.getEndpoint().getSipUri().contains(event.getProperty("from").trim())) {
+                createCall(event, userName, event.getProperty("to"), user.getPhoneNumber(), baseAppUrl);
+            } else {
+                LOG.error(MessageFormat.format("Could not find the endpoint [{0}] for userName [{1}]",
+                        event.getProperty("from"), userName));
             }
-
-            LOG.info(MessageFormat.format("Created outgoing call [{0}] for incomingCall [{1}]",
-                    call.getId(), event.getProperty("callId")));
-
-            Map<String, BridgeDetails> bridgeDetailsMap = bridgeMap.get(userName);
-            if (bridgeDetailsMap == null) {
-                bridgeDetailsMap = new ConcurrentHashMap<String, BridgeDetails>();
-                bridgeMap.put(userName, bridgeDetailsMap);
-            }
-
-            BridgeDetails bridgeDetails = new BridgeDetails();
-
-            CallDetails incomingCall = new CallDetails(event.getProperty("callId"));
-            incomingCall.addEvent(event);
-
-            // The events for outgoing call will be saved after AnswerEvent
-            CallDetails outgoingCall = new CallDetails(call.getId());
-
-            bridgeDetails.setIncomingCall(incomingCall);
-            bridgeDetails.setOutgoingCall(outgoingCall);
-
-            // Save the mapped bridge details based on outgoing call created
-            bridgeDetailsMap.put(call.getId(), bridgeDetails);
-
         } catch (UserNotFoundException e) {
             LOG.error("User not found to create call", e);
 
@@ -117,45 +90,57 @@ public class CallbackServices {
         try {
             User user = userServices.getUser(userName);
 
-            // Create outgoing call using Bandwidth SDK
-            Call call = Call.create(user.getEndpoint().getSipUri(), event.getProperty("to"),
-                    URLUtil.getCallbacksBaseUrl(baseAppUrl, userName), null);
-
-            if (call == null || call.getId() == null) {
-                LOG.error(MessageFormat.format("Could not create outgoing call for incoming call [{0}]",
-                        event.getProperty("callId")));
-                return;
+            if (user.getPhoneNumber().contains(event.getProperty("to").trim())) {
+                createCall(event, userName, user.getEndpoint().getSipUri(), event.getProperty("to"), baseAppUrl);
+            } else {
+                LOG.error(MessageFormat.format("Could not find the number [{0}] for userName [{1}]",
+                        event.getProperty("to"), userName));
             }
-
-            LOG.info(MessageFormat.format("Created outgoing call [{0}] for incomingCall [{1}]",
-                    call.getId(), event.getProperty("callId")));
-
-            Map<String, BridgeDetails> bridgeDetailsMap = bridgeMap.get(userName);
-            if (bridgeDetailsMap == null) {
-                bridgeDetailsMap = new ConcurrentHashMap<String, BridgeDetails>();
-                bridgeMap.put(userName, bridgeDetailsMap);
-            }
-
-            BridgeDetails bridgeDetails = new BridgeDetails();
-
-            CallDetails incomingCall = new CallDetails(event.getProperty("callId"));
-            incomingCall.addEvent(event);
-
-            // The events for outgoing call will be saved after AnswerEvent
-            CallDetails outgoingCall = new CallDetails(call.getId());
-
-            bridgeDetails.setIncomingCall(incomingCall);
-            bridgeDetails.setOutgoingCall(outgoingCall);
-
-            // Save the mapped bridge details based on outgoing call created
-            bridgeDetailsMap.put(call.getId(), bridgeDetails);
-
         } catch (UserNotFoundException e) {
             LOG.error("User not found to create call", e);
 
         } catch (Exception e) {
             LOG.error("Could not create outbound call based on call TO Endpoint", e);
         }
+    }
+
+    private void createCall(final Event event, final String userName, final String to, final String from,
+                            final String baseAppUrl) throws UserNotFoundException, Exception {
+
+        User user = userServices.getUser(userName);
+
+        // Create outgoing call using Bandwidth SDK
+        Call call = Call.create(to, from, URLUtil.getCallbacksBaseUrl(baseAppUrl, userName), null);
+
+        if (call == null || call.getId() == null) {
+            LOG.error(MessageFormat.format("Could not create outgoing call for incoming call [{0}]",
+                    event.getProperty("callId")));
+            return;
+        }
+
+        LOG.info(MessageFormat.format("Created outgoing call [{0}] for incomingCall [{1}]",
+                call.getId(), event.getProperty("callId")));
+
+        Map<String, BridgeDetails> bridgeDetailsMap = bridgeMap.get(userName);
+        if (bridgeDetailsMap == null) {
+            bridgeDetailsMap = new ConcurrentHashMap<String, BridgeDetails>();
+            bridgeMap.put(userName, bridgeDetailsMap);
+        }
+
+        BridgeDetails bridgeDetails = new BridgeDetails();
+
+        // Save the incoming call event
+        CallDetails incomingCall = new CallDetails(event.getProperty("callId"));
+        incomingCall.addEvent(event);
+
+        // The events for outgoing call will be saved after AnswerEvent
+        CallDetails outgoingCall = new CallDetails(call.getId());
+
+        bridgeDetails.setIncomingCall(incomingCall);
+        bridgeDetails.setOutgoingCall(outgoingCall);
+
+        // Save the mapped bridge details based on outgoing call created
+        bridgeDetailsMap.put(call.getId(), bridgeDetails);
     }
 
     private void bridgeCalls(final Event event, final String userName) {
