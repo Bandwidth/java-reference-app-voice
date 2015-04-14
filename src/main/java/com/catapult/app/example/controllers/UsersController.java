@@ -7,7 +7,9 @@ import javax.servlet.http.HttpServletRequest;
 import org.apache.log4j.Logger;
 import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -42,7 +44,8 @@ public class UsersController {
     private EndpointServices endpointServices;
 
     @RequestMapping(method = RequestMethod.POST, headers = { "Content-Type=application/json" })
-    public @ResponseBody User createUser(@RequestBody final UserAdapter userAdapter, final HttpServletRequest request) 
+    public @ResponseBody ResponseEntity<User> createUser(@RequestBody final UserAdapter userAdapter, 
+            final HttpServletRequest request, final HttpServletRequest response) 
             throws AppPlatformException, ParseException, Exception {
         
         LOG.info(String.format("Create user: userName %s", userAdapter.getUserName()));
@@ -50,7 +53,7 @@ public class UsersController {
         try {
             user = userServices.createUser(userAdapter, URLUtil.getAppBaseUrl(request));
             LOG.info(String.format("User successfully created: %s", userAdapter.getUserName()));
-            return user;
+            return new ResponseEntity<User>(user, HttpStatus.CREATED);
         } catch (final MissingFieldsException e) {
             LOG.error(String.format("Missing fields to create user %s: %s", userAdapter.getUserName(), e));
             throw e;
