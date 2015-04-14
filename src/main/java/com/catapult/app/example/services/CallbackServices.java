@@ -59,11 +59,11 @@ public class CallbackServices {
                 LOG.info("Received incoming call FROM or TO NON Mobile Client");
 
             } else if (event instanceof AnswerEvent) {
-                LOG.info("Outgoing call answered " + event);
-                bridgeCreatedCalls(event, userName);
+                LOG.info("Call answered " + eventString);
+                bridgeCalls(event, userName);
 
             } else {
-                LOG.info("Received event for endpoint calls " + event);
+                LOG.info("Received event for endpoint calls " + eventString);
                 storeCallsEvent(event, userName);
             }
         } catch (Exception e) {
@@ -78,6 +78,13 @@ public class CallbackServices {
             // Create outgoing call using Bandwidth SDK
             Call call = Call.create(event.getProperty("to"), user.getPhoneNumber(),
                     URLUtil.getCallbacksBaseUrl(baseAppUrl, userName), userName);
+
+            if (call == null || call.getId() == null) {
+                LOG.error("Could not create outgoing call for incoming call " + event.getProperty("callId"));
+                return;
+            }
+
+            LOG.info("Created outgoing call " + call.getId() + " for incoming call " + event.getProperty("callId"));
 
             Map<String, BridgeDetails> bridgeDetailsMap = bridgeMap.get(userName);
             if (bridgeDetailsMap == null) {
@@ -107,7 +114,7 @@ public class CallbackServices {
         }
     }
 
-    private void bridgeCreatedCalls(final Event event, final String userName) {
+    private void bridgeCalls(final Event event, final String userName) {
 
         if (userName == null) {
             LOG.error("Could not find the username for call " + event.getProperty("callId"));
@@ -122,7 +129,7 @@ public class CallbackServices {
 
         BridgeDetails bridgeDetails = bridgeDetailsMap.get(event.getProperty("callId"));
         if (bridgeDetails == null) {
-            LOG.error("No incoming call mapped to create bridge for user " + userName
+            LOG.error("No outgoing call mapped to create bridge for user " + userName
                     + " based on call " + event.getProperty("callId"));
             return;
         }
