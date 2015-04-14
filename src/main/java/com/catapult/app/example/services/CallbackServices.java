@@ -44,16 +44,12 @@ public class CallbackServices {
             if (event instanceof IncomingCallEvent) {
 
                 // Case Incoming call from Endpoint to a PSTN number
-                if (event.getProperty("from") != null) {
-                    if (sipPattern.matcher(event.getProperty("from")).find()) {
-                        createCallFromEndpoint(event, userName, baseAppUrl);
-                        return;
-                    }
+                if (event.getProperty("from") != null && sipPattern.matcher(event.getProperty("from")).find()) {
+                    createCallFromEndpoint(event, userName, baseAppUrl);
                 }
                 // Case Incoming call from PSTN to a number associated to an Endpoint
                 else if (event.getProperty("to") != null) {
-                        createCallToEndpoint(event, userName, baseAppUrl);
-                        return;
+                    createCallToEndpoint(event, userName, baseAppUrl);
                 }
             } else if (event instanceof AnswerEvent) {
                 LOG.info(MessageFormat.format("Call answered [{0}]", eventString));
