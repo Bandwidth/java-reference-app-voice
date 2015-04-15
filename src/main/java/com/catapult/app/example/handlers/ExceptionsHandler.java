@@ -13,6 +13,7 @@ import com.bandwidth.sdk.AppPlatformException;
 import com.catapult.app.example.constants.ErrorMessages;
 import com.catapult.app.example.exceptions.MissingFieldsException;
 import com.catapult.app.example.exceptions.UserAlreadyExistsException;
+import com.catapult.app.example.exceptions.UserNotFoundException;
 
 /**
  * This calss intend to make exceptions handling.
@@ -99,7 +100,27 @@ public class ExceptionsHandler {
             }
         }
     }
-    
+
+    /**
+     * Do the Exception handling
+     * @param response the response
+     * @param ex the exception
+     */
+    @ExceptionHandler(UserNotFoundException.class)
+    public void userNotFoundExceptionInterceptor(final HttpServletResponse response, final UserNotFoundException ex) {
+        try {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.getWriter().print(ex.getErrorMessage());
+            if(LOG.isInfoEnabled()) {
+                LOG.error(String.format("User not found exception: %s", ex));
+            }
+        } catch (final IOException e) {
+            if(LOG.isInfoEnabled()) {
+                LOG.error("ERROR writing response: ", e);
+            }
+        }
+    }
+
     /**
      * Do the Exception handling
      * @param response the response
