@@ -34,7 +34,7 @@ public class CallDetails implements Serializable {
     public boolean hasIncomingEvent(Event event) {
         for (Event evt : events) {
             if (evt instanceof IncomingCallEvent
-                    && event.getProperty("to").equalsIgnoreCase(event.getProperty("to"))) {
+                    && evt.getProperty("to").equalsIgnoreCase(event.getProperty("to"))) {
                 return true;
             }
         }
@@ -49,7 +49,6 @@ public class CallDetails implements Serializable {
     public String toString() {
         final StringBuilder sb = new StringBuilder("CallDetails{");
         sb.append("callId='").append(callId).append('\'');
-        sb.append(", events=").append(events);
         sb.append('}');
         return sb.toString();
     }

@@ -85,16 +85,18 @@ public class CallbackServices {
         try {
             User user = userServices.getUser(userName);
 
-            if (!incomingCallExists(event)) {
-                if (user.getPhoneNumber().contains(event.getProperty("to").trim())) {
-                    createCall(event, userName, user.getEndpoint().getSipUri(), event.getProperty("to"), baseAppUrl);
-                } else {
-                    LOG.error(MessageFormat.format("Could not find the number [{0}] for userName [{1}]",
-                            event.getProperty("to"), userName));
-                }
-            } else {
-                LOG.info(MessageFormat.format("Call to [{0}] already exist. Rejecting call", event.getProperty("to")));
+            if (incomingCallExists(event)) {
+                LOG.info(MessageFormat.format("Call to [{0}] already exist. Doing nothing with call",
+                        event.getProperty("to")));
                 hangupCall(event);
+                return;
+            }
+
+            if (user.getPhoneNumber().contains(event.getProperty("to").trim())) {
+                createCall(event, userName, user.getEndpoint().getSipUri(), event.getProperty("to"), baseAppUrl);
+            } else {
+                LOG.error(MessageFormat.format("Could not find the number [{0}] for userName [{1}]",
+                        event.getProperty("to"), userName));
             }
         } catch (UserNotFoundException e) {
             LOG.error("User not found to create call", e);
@@ -249,7 +251,10 @@ public class CallbackServices {
             return;
         }
 
-        bridgeDetailsMap.remove(event.getProperty("callId"));
+        BridgeDetails bridgeDetails = bridgeDetailsMap.remove(event.getProperty("callId"));
+        if (bridgeDetails != null) {
+            LOG.info(MessageFormat.format("Removing mapped calls [{0}]", bridgeDetails));
+        }
     }
 
     private boolean incomingCallExists(final Event event) {
