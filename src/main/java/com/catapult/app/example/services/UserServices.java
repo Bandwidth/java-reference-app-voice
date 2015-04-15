@@ -100,7 +100,7 @@ public class UserServices {
 
         Endpoint createdEndpoint;
         try {
-            createdEndpoint = endpointServices.createEndpoint(currentCatapultUser.getDomain().getId(), userEndpointName, 
+            createdEndpoint = endpointServices.createEndpoint(currentCatapultUser.getDomain().getId(), userEndpointName,
                     userAdapter.getPassword(), userEndpointDescription);
             //Add the application ID to the endpoint.
             endpointServices.updateEndpoint(createdEndpoint, userAdapter.getPassword(), createdApplication.getId());
@@ -108,18 +108,11 @@ public class UserServices {
             LOG.error(String.format("Could not create a Domain: %s", e));
             throw e;
         }
-<<<<<<< HEAD
         com.catapult.app.example.beans.Endpoint endpoint = new com.catapult.app.example.beans.Endpoint(createdEndpoint);
         endpoint.setApplicationId(createdApplication.getId());
         newUser.setEndpoint(endpoint);
         newUser.setPhoneNumber(phoneNumbers.get(0).getNumber());
 
-=======
-        
-        newUser.setEndpoint(new com.catapult.app.example.beans.Endpoint(createdEndpoint));
-        newUser.setPhoneNumber(phoneNumbers.get(0).getNumber());
-        
->>>>>>> master
         users.putIfAbsent(userAdapter.getUserName(), newUser);
         currentCatapultUser.getPhoneNumbers().addAll(phoneNumbers);
         catapultUserData.putIfAbsent(userConfiguration.getUserId(), currentCatapultUser);
@@ -181,7 +174,7 @@ public class UserServices {
         applicationServices.findApplication(deletedUser.getEndpoint().getApplicationId());
         //Remove the user endpoint
         endpointServices.deleteEndpoint(deletedUser.getDomain().getId(), deletedUser.getEndpoint().getId());
-        
+
         //If there is no users we should remove the domain
         if(users.size() == 0) {
             //Delete the domain
@@ -191,14 +184,14 @@ public class UserServices {
     }
 
     /**
-     * 
+     *
      * @param name the user name to update.
      * @param newUserInfo the new user info.
      * @return the updated user.
      * @throws UserNotFoundException
-     * @throws UserAlreadyExistsException 
+     * @throws UserAlreadyExistsException
      */
-    public User updateUser(final String name, final UserAdapter newUserInfo) throws UserNotFoundException, UserAlreadyExistsException { 
+    public User updateUser(final String name, final UserAdapter newUserInfo) throws UserNotFoundException, UserAlreadyExistsException {
         final User user = users.remove(name);
         if(user == null) {
             //User not found

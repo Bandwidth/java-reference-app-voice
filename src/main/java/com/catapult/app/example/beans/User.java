@@ -10,20 +10,16 @@ import com.catapult.app.example.adapters.UserAdapter;
 public class User implements Serializable {
 
     private static final long serialVersionUID = 4870449978302850567L;
-    
+
     private String userName;
     private String password;
     private Domain domain;
     private Endpoint endpoint;
-<<<<<<< HEAD
-    //private PhoneNumber phoneNumber;
-=======
->>>>>>> master
     private String phoneNumber;
     private Application application;
-    
+
     public User(){};
-    
+
     /**
      * Adapter based constructor.
      * @param userAdapter
@@ -81,7 +77,7 @@ public class User implements Serializable {
     public void setEndpoint(final Endpoint endpoint) {
         this.endpoint = endpoint;
     }
-    
+
     /**
      * Merge the user properties.
      * @param userAdapter the user adapter with new properties.
@@ -92,40 +88,30 @@ public class User implements Serializable {
     }
 
     /**
-     * @return the application
+     * @return the phoneNumber
      */
-<<<<<<< HEAD
-    public Application getApplication() {
-        return application;
-=======
     public String getPhoneNumber() {
         return phoneNumber;
->>>>>>> master
+    }
+
+    /**
+     * @param phoneNumber the phoneNumber to set
+     */
+    public void setPhoneNumber(final String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    /**
+     * @return the application
+     */
+    public Application getApplication() {
+        return application;
     }
 
     /**
      * @param application the application to set
      */
-<<<<<<< HEAD
     public void setApplication(final Application application) {
         this.application = application;
-=======
-    public void setPhoneNumber(final String phoneNumber) {
-        this.phoneNumber = phoneNumber;
->>>>>>> master
-    }
-
-    /**
-     * @return the number
-     */
-    public String getPhoneNumber() {
-        return phoneNumber;
-    }
-
-    /**
-     * @param number the number to set
-     */
-    public void setPhoneNumber(final String number) {
-        this.phoneNumber = number;
     }
 }
