@@ -231,7 +231,12 @@ public class CallbackServices {
 
         // Add call event
         CallEvents callEvents = callEventMap.get(event.getProperty("callId"));
-        callEvents.addEvent(event);
+        if (callEvents != null) {
+            callEvents.addEvent(event);
+        } else {
+            LOG.error(MessageFormat.format("Could not find the call events mapped for userName [{0}] " +
+                    "and call [{1}]", userName, event.getProperty("callId")));
+        }
     }
 
     private void checkCallHangup(final Event event, final String userName) {
@@ -252,10 +257,6 @@ public class CallbackServices {
             return;
         }
 
-        // Add call event
-        CallEvents callEvents = callEventMap.get(event.getProperty("callId"));
-        callEvents.addEvent(event);
-
         String secondCallId = bridgeMap.get(event.getProperty("callId"));
         if (secondCallId == null) {
             LOG.error(MessageFormat.format("No calls mapped to hangup second call leg for user [{0}] " +
@@ -263,8 +264,22 @@ public class CallbackServices {
             return;
         }
 
-        // Hangup second call leg
-        hangupCall(secondCallId);
+        // Add call event
+        CallEvents callEvents = callEventMap.get(event.getProperty("callId"));
+        if (callEvents != null) {
+            callEvents.addEvent(event);
+        } else {
+            LOG.error(MessageFormat.format("Could not find the call events mapped for userName [{0}] " +
+                            "and call [{1}]", userName, event.getProperty("callId")));
+        }
+
+        // Need to synchronize on callEventMap per user to avoid
+        // connection allocation problem when calling the api
+        synchronized (callEventMap) {
+
+            // Hangup second call leg
+            hangupCall(secondCallId);
+        }
     }
 
     private void hangupCall(final String callId) {
