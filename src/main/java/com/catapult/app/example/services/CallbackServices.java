@@ -94,9 +94,8 @@ public class CallbackServices {
             User user = userServices.getUser(userName);
 
             if (incomingCallExists(event)) {
-                LOG.info(MessageFormat.format("Call to [{0}] already exist. Rejecting call [{0}] to [{1}]",
+                LOG.info(MessageFormat.format("Call to [{0}] already exist. Doing nothing with call [{0}] to [{1}]",
                         event.getProperty("callId"), event.getProperty("to")));
-                hangupCall(event);
                 return;
             }
 
