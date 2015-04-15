@@ -4,65 +4,25 @@ import java.io.Serializable;
 
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 
-import com.catapult.app.example.beans.BridgeDetails;
-import com.catapult.app.example.beans.CallDetails;
+import com.catapult.app.example.beans.CallEvents;
 
 @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 public class CallbackAdapter implements Serializable {
 
     private static final long serialVersionUID = -8016944879393169608L;
 
-    private String bridgeId;
-    private CallDetails incomingCall;
-    private CallDetails outgoingCall;
+    private CallEvents callEvents;
 
-
-    public CallbackAdapter(final BridgeDetails details) {
-        super();
-        this.bridgeId = details.getBridgeId();
-        this.incomingCall = details.getIncomingCall();
-        this.outgoingCall = details.getOutgoingCall();
+    public CallbackAdapter(final CallEvents callEvents) {
+        this.callEvents = callEvents;
     }
 
-    /**
-     * @return the bridgeId
-     */
-    public String getBridgeId() {
-        return bridgeId;
+    public CallEvents getCallEvents() {
+        return callEvents;
     }
 
-    /**
-     * @return the incomingCall
-     */
-    public CallDetails getIncomingCall() {
-        return incomingCall;
+    public void setCallEvents(CallEvents callEvents) {
+        this.callEvents = callEvents;
     }
 
-    /**
-     * @return the outgoingCall
-     */
-    public CallDetails getOutgoingCall() {
-        return outgoingCall;
-    }
-
-    /**
-     * @param bridgeId the bridgeId to set
-     */
-    public void setBridgeId(final String bridgeId) {
-        this.bridgeId = bridgeId;
-    }
-
-    /**
-     * @param incomingCall the incomingCall to set
-     */
-    public void setIncomingCall(final CallDetails incomingCall) {
-        this.incomingCall = incomingCall;
-    }
-
-    /**
-     * @param outgoingCall the outgoingCall to set
-     */
-    public void setOutgoingCall(final CallDetails outgoingCall) {
-        this.outgoingCall = outgoingCall;
-    }
 }

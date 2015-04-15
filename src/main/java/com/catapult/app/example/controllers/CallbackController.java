@@ -26,25 +26,49 @@ public class CallbackController {
     private CallbackServices callbackServices;
 
     private final static Logger LOG = Logger.getLogger(CallbackController.class);
-    
+
     /**
-     * Resource to receive the user callback requests.
-     * @param event the callback event with the data.
+     * Resource to receive incoming call callback events
+     * @param event
+     * @param userName
+     * @param request
      */
-    @RequestMapping(method = RequestMethod.POST, value = "/{userName}/callback", headers = "Content-Type=application/json")
-    public void receiveCallback(@RequestBody final String event,
-                                @PathVariable("userName") final String userName, final HttpServletRequest request) {
-        LOG.info(MessageFormat.format("Received callback event [{0}] for userName [{1}]", event, userName));
-        callbackServices.handleCallback(event, userName, URLUtil.getAppBaseUrl(request));
+    @RequestMapping(method = RequestMethod.POST, value = "/{userName}/callback",
+                    headers = "Content-Type=application/json")
+    public void incomingCallback(@RequestBody final String event,
+            @PathVariable("userName") final String userName, final HttpServletRequest request) {
+        LOG.info(MessageFormat.format("Received INCOMING LEG callback event [{0}] for userName [{1}]",
+                event, userName));
+        callbackServices.handleIncomingCallback(event, userName, URLUtil.getAppBaseUrl(request));
     }
-    
+
+    /**
+     * Resource to receive outgoing call callback events
+     * @param event
+     * @param userName
+     * @param request
+     */
+    @RequestMapping(method = RequestMethod.POST, value = "/{userName}/outgoing",
+                    headers = "Content-Type=application/json")
+    public void outgoingCallback(@RequestBody final String event,
+            @PathVariable("userName") final String userName, final HttpServletRequest request) {
+        LOG.info(MessageFormat.format("Received OUTGOING LEG callback event [{0}] for userName [{1}]",
+                event, userName));
+        callbackServices.handleOutgoingCallback(event, userName, URLUtil.getAppBaseUrl(request));
+    }
+
     /**
      * Resource to receive the user callback requests.
-     * @param event the callback event with the data.
+     * @param userName
+     * @param request
+     * @return list of callback events
      */
-    @RequestMapping(method = RequestMethod.GET, value = "/{userName}/callback", headers = "Content-Type=application/json")
-    public @ResponseBody List<CallbackAdapter> getCallbacks(@PathVariable("userName") final String userName, final String callId, final HttpServletRequest request) {
+    @RequestMapping(method = RequestMethod.GET, value = "/{userName}/callback",
+                    headers = "Content-Type=application/json")
+    public @ResponseBody List<CallbackAdapter> getCallbacks(@PathVariable("userName") final String userName,
+            final HttpServletRequest request) {
         LOG.info(MessageFormat.format("Get events for userName [{0}]", userName));
         return callbackServices.getUserCallbacks(userName);
     }
+
 }

@@ -1,13 +1,14 @@
 package com.catapult.app.example.beans;
 
 import com.bandwidth.sdk.model.events.Event;
+import com.bandwidth.sdk.model.events.HangupEvent;
 import com.bandwidth.sdk.model.events.IncomingCallEvent;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CallDetails implements Serializable {
+public class CallEvents implements Serializable {
 
     private static final long serialVersionUID = -5147454881949650162L;
 
@@ -15,7 +16,7 @@ public class CallDetails implements Serializable {
 
     private List<Event> events = new ArrayList<>();
 
-    public CallDetails(String callId) {
+    public CallEvents(String callId) {
         this.callId = callId;
     }
 
@@ -31,14 +32,20 @@ public class CallDetails implements Serializable {
         this.events.add(event);
     }
 
-    public boolean hasIncomingEvent(Event event) {
+    public boolean hasActiveCall(Event event) {
+        boolean isActiveCall = false;
         for (Event evt : events) {
-            if (evt instanceof IncomingCallEvent
-                    && evt.getProperty("to").equalsIgnoreCase(event.getProperty("to"))) {
-                return true;
+            if (evt instanceof IncomingCallEvent && evt.getProperty("to").equals(event.getProperty("to"))) {
+                isActiveCall = true;
+            }
+
+            // Here we guarantee that the incoming call event is always placed before
+            // hangup event inside this list
+            if (evt instanceof HangupEvent && isActiveCall) {
+                isActiveCall = false;
             }
         }
-        return false;
+        return isActiveCall;
     }
 
     public void setEvents(List<Event> events) {

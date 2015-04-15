@@ -7,11 +7,19 @@ public class URLUtil {
     private static final String APP_BASE_URL = "%s://%s:%d%s";
 
     /**
-     * Configure the operations callback URL.
-     * @return the callbacks URL.
+     * Configure the incoming callback URL.
+     * @return the incoming call callbacks URL.
      */
-    public static String getCallbacksBaseUrl(final String appBaseUrl, final String userName) {
+    public static String getIncomingCallbackUrl(final String appBaseUrl, final String userName) {
         return String.format("%s/users/%s/callback", appBaseUrl, userName);
+    }
+
+    /**
+     * Configure the outgoing callback URL.
+     * @return the outgoing call callback URL.
+     */
+    public static String getOutgoingCallbackUrl(final String appBaseUrl, final String userName) {
+        return String.format("%s/users/%s/outgoing", appBaseUrl, userName);
     }
 
     /**

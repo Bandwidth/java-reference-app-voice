@@ -2,6 +2,7 @@ package com.catapult.app.example.services;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -20,8 +21,7 @@ import com.bandwidth.sdk.model.events.EventBase;
 import com.bandwidth.sdk.model.events.HangupEvent;
 import com.bandwidth.sdk.model.events.IncomingCallEvent;
 import com.catapult.app.example.adapters.CallbackAdapter;
-import com.catapult.app.example.beans.BridgeDetails;
-import com.catapult.app.example.beans.CallDetails;
+import com.catapult.app.example.beans.CallEvents;
 import com.catapult.app.example.beans.User;
 import com.catapult.app.example.exceptions.UserNotFoundException;
 import com.catapult.app.example.util.URLUtil;
@@ -33,41 +33,58 @@ public class CallbackServices {
 
     private static final Pattern sipPattern = Pattern.compile("^sip:.+@.+");
 
-    private static final Map<String, Map<String, BridgeDetails>> bridgeMap = new ConcurrentHashMap<>();
+    /**
+     * Store the call legs participating in the bridge
+     */
+    private static final Map<String, String> bridgeMap = new ConcurrentHashMap<>();
+
+    /**
+     * Store the incoming and outgoing call events
+     */
+    private static final Map<String, Map<String, CallEvents>> userEventCallMap = new ConcurrentHashMap<>();
 
     @Autowired
     private UserServices userServices;
 
-    /**
-     * 
-     * @param eventString string containing event data
-     */
-    public void handleCallback(final String eventString, final String userName, final String baseAppUrl) {
+    public void handleIncomingCallback(final String eventString, final String userName, final String baseAppUrl) {
+        try {
+            Event event = EventBase.createEventFromString(eventString);
+            if (event instanceof IncomingCallEvent) {
+
+                if (event.getProperty("from") != null && sipPattern.matcher(event.getProperty("from")).find()) {
+                    // Case Incoming call from Endpoint to a PSTN number
+                    createCallFromEndpoint(event, userName, baseAppUrl);
+
+                } else if (event.getProperty("to") != null) {
+                    // Case Incoming call from PSTN to a number associated to an Endpoint
+                    createCallToEndpoint(event, userName, baseAppUrl);
+                }
+            } else if (event instanceof HangupEvent) {
+                checkCallHangup(event, userName);
+
+            } else {
+                addCallEvent(event, userName);
+            }
+        } catch (Exception e) {
+            LOG.error("Could not create incoming leg event from string", e);
+        }
+    }
+
+    public void handleOutgoingCallback(final String eventString, final String userName, final String baseAppUrl) {
         try {
             Event event = EventBase.createEventFromString(eventString);
 
-            if (event instanceof IncomingCallEvent) {
-
-                // Case Incoming call from Endpoint to a PSTN number
-                if (event.getProperty("from") != null && sipPattern.matcher(event.getProperty("from")).find()) {
-                    createCallFromEndpoint(event, userName, baseAppUrl);
-                }
-                // Case Incoming call from PSTN to a number associated to an Endpoint
-                else if (event.getProperty("to") != null) {
-                    createCallToEndpoint(event, userName, baseAppUrl);
-                }
-            } else if (event instanceof AnswerEvent) {
+            if (event instanceof AnswerEvent) {
                 bridgeCalls(event, userName);
 
             } else if (event instanceof HangupEvent) {
-                removeCall(event, userName);
+                checkCallHangup(event, userName);
 
             } else {
-                LOG.info(MessageFormat.format("Received event for endpoint calls [{0}]", eventString));
-                storeCallEvent(event, userName);
+                addCallEvent(event, userName);
             }
         } catch (Exception e) {
-            LOG.error("Could not create event from string", e);
+            LOG.error("Could not create outgoing leg event from string", e);
         }
     }
 
@@ -93,7 +110,7 @@ public class CallbackServices {
         try {
             User user = userServices.getUser(userName);
 
-            if (incomingCallExists(event)) {
+            if (hasActiveCall(event)) {
                 LOG.info(MessageFormat.format("Call to [{0}] already exist. Doing nothing with call [{0}] to [{1}]",
                         event.getProperty("callId"), event.getProperty("to")));
                 return;
@@ -119,7 +136,7 @@ public class CallbackServices {
         User user = userServices.getUser(userName);
 
         // Create outgoing call using Bandwidth SDK
-        Call call = Call.create(to, from, URLUtil.getCallbacksBaseUrl(baseAppUrl, userName), null);
+        Call call = Call.create(to, from, URLUtil.getOutgoingCallbackUrl(baseAppUrl, userName), null);
 
         if (call == null || call.getId() == null) {
             LOG.error(MessageFormat.format("Could not create outgoing call for incoming call [{0}]",
@@ -130,98 +147,80 @@ public class CallbackServices {
         LOG.info(MessageFormat.format("Created outgoing call [{0}] for incomingCall [{1}]",
                 call.getId(), event.getProperty("callId")));
 
-        Map<String, BridgeDetails> bridgeDetailsMap = bridgeMap.get(userName);
-        if (bridgeDetailsMap == null) {
-            bridgeDetailsMap = new ConcurrentHashMap<String, BridgeDetails>();
-            bridgeMap.put(userName, bridgeDetailsMap);
+        Map<String, CallEvents> callEventMap = userEventCallMap.get(userName);
+        if (callEventMap == null) {
+            callEventMap = new ConcurrentHashMap<>();
+            userEventCallMap.put(userName, callEventMap);
         }
-
-        BridgeDetails bridgeDetails = new BridgeDetails();
-
-        // Save the incoming call event
-        CallDetails incomingCall = new CallDetails(event.getProperty("callId"));
-        incomingCall.addEvent(event);
 
         // The events for outgoing call will be saved after AnswerEvent
-        CallDetails outgoingCall = new CallDetails(call.getId());
+        CallEvents outgoingCall = new CallEvents(call.getId());
 
-        bridgeDetails.setIncomingCall(incomingCall);
-        bridgeDetails.setOutgoingCall(outgoingCall);
+        // Save the incoming call event
+        CallEvents incomingCall = new CallEvents(event.getProperty("callId"));
+        incomingCall.addEvent(event);
 
-        // Save the mapped bridge details based on outgoing call created
-        bridgeDetailsMap.put(call.getId(), bridgeDetails);
-    }
+        // Keep track of each call events
+        callEventMap.put(outgoingCall.getCallId(), outgoingCall);
+        callEventMap.put(incomingCall.getCallId(), incomingCall);
 
-    private void hangupCall(final Event event) {
-        try {
-            Call call = Call.get(event.getProperty("callId"));
-
-            if (call != null) {
-                call.hangUp();
-            } else {
-                LOG.error(MessageFormat.format("Could not find call [{0}] to hangup",
-                        event.getProperty("callId")));
-            }
-        } catch (Exception e) {
-            LOG.error("Error while getting call", e);
-        }
+        // Keep track of call ids to create a bridge
+        bridgeMap.put(outgoingCall.getCallId(), incomingCall.getCallId());
+        bridgeMap.put(incomingCall.getCallId(), outgoingCall.getCallId());
     }
 
     private void bridgeCalls(final Event event, final String userName) {
-
         if (userName == null) {
             LOG.error(MessageFormat.format("Could not find the username for call [{0}]",
                     event.getProperty("callId")));
             return;
         }
 
-        Map<String, BridgeDetails> bridgeDetailsMap = bridgeMap.get(userName);
-        if (bridgeDetailsMap == null) {
-            LOG.error(MessageFormat.format("No incoming call mapped to create bridge for user [{0}]", userName));
-            return;
-        }
-
-        BridgeDetails bridgeDetails = bridgeDetailsMap.get(event.getProperty("callId"));
-        if (bridgeDetails == null) {
-            LOG.error(MessageFormat.format("No outgoing call mapped to create bridge for user [{0}] based on call [{1}]",
+        String secondCallId = bridgeMap.get(event.getProperty("callId"));
+        if (secondCallId == null) {
+            LOG.error(MessageFormat.format("No calls mapped to create bridge for user [{0}] based on call [{1}]",
                     userName, event.getProperty("callId")));
             return;
         }
 
-        // Add the outgoing call event when Answered
-        bridgeDetails.getOutgoingCall().addEvent(event);
+        Map<String, CallEvents> callEventMap = userEventCallMap.get(userName);
+        if (callEventMap == null) {
+            LOG.error(MessageFormat.format("No call mapped for user [{0}]", userName));
+            return;
+        }
+
+        // Add event when call is answered
+        CallEvents callEvents = callEventMap.get(event.getProperty("callId"));
+        callEvents.addEvent(event);
 
         try {
             // Bridge the incoming and outgoing calls using Bandwidth SDK
-            String incomingCallId = bridgeDetails.getIncomingCall().getCallId();
-            String outgoingCallId = bridgeDetails.getOutgoingCall().getCallId();
-            Bridge bridge = Bridge.create(incomingCallId, outgoingCallId);
+            Bridge bridge = Bridge.create(secondCallId, event.getProperty("callId"));
 
             if (bridge == null || bridge.getId() == null) {
-                LOG.error(MessageFormat.format("Could not bridge calls [{0}, {1}]", incomingCallId, outgoingCallId));
+                LOG.error(MessageFormat.format("Could not bridge calls [{0}, {1}]",
+                        secondCallId, event.getProperty("callId")));
             }
 
-            bridgeDetails.setBridgeId(bridge.getId());
-
             LOG.info(MessageFormat.format("Calls [{0}, {1}] successfully bridged by [{2}]",
-                    incomingCallId, outgoingCallId, bridge.getId()));
+                    secondCallId, event.getProperty("callId"), bridge.getId()));
 
         } catch (Exception e) {
-            LOG.error("Bridge could not be created for " + bridgeDetails);
+            LOG.error(MessageFormat.format("Bridge could not be created for calls [{0}, {1}]",
+                    secondCallId, event.getProperty("callId")), e);
         }
     }
 
-    private void storeCallEvent(final Event event, final String userName) {
-
+    private void addCallEvent(final Event event, final String userName) {
         if (userName == null) {
             LOG.error(MessageFormat.format("Could not find the username for call [{0}]",
                     event.getProperty("callId")));
             return;
         }
 
-        Map<String, BridgeDetails> bridgeDetailsMap = bridgeMap.get(userName);
-        if (bridgeDetailsMap == null) {
-            LOG.error(MessageFormat.format("No incoming call mapped to create bridge for user [{0}]", userName));
+        Map<String, CallEvents> callEventMap = userEventCallMap.get(userName);
+        if (callEventMap == null) {
+            LOG.error(MessageFormat.format("No call mapped for user [{0}]", userName));
             return;
         }
 
@@ -230,47 +229,63 @@ public class CallbackServices {
             return;
         }
 
-        for (BridgeDetails bridgeDetails : bridgeDetailsMap.values()) {
-
-            if (bridgeDetails.getIncomingCall() != null
-                    && event.getProperty("callId").equals(bridgeDetails.getIncomingCall().getCallId())) {
-                bridgeDetails.getIncomingCall().addEvent(event);
-                break;
-
-            } else if (bridgeDetails.getOutgoingCall() != null
-                    && event.getProperty("callId").equals(bridgeDetails.getOutgoingCall().getCallId())) {
-                bridgeDetails.getOutgoingCall().addEvent(event);
-                break;
-            }
-        }
+        // Add call event
+        CallEvents callEvents = callEventMap.get(event.getProperty("callId"));
+        callEvents.addEvent(event);
     }
 
-    private void removeCall(final Event event, final String userName) {
+    private void checkCallHangup(final Event event, final String userName) {
         if (userName == null) {
             LOG.error(MessageFormat.format("Could not find the username for call [{0}]",
                     event.getProperty("callId")));
             return;
         }
 
-        Map<String, BridgeDetails> bridgeDetailsMap = bridgeMap.get(userName);
-        if (bridgeDetailsMap == null) {
-            LOG.error(MessageFormat.format("No incoming call mapped to create bridge for user [{0}]", userName));
+        Map<String, CallEvents> callEventMap = userEventCallMap.get(userName);
+        if (callEventMap == null) {
+            LOG.error(MessageFormat.format("No call mapped for user [{0}]", userName));
             return;
         }
 
-        BridgeDetails bridgeDetails = bridgeDetailsMap.remove(event.getProperty("callId"));
-        if (bridgeDetails != null) {
-            LOG.info(MessageFormat.format("Removing mapped calls [{0}]", bridgeDetails));
+        if (event.getProperty("callId") == null) {
+            LOG.error(MessageFormat.format("Could not find the callId on event [{0}]", event));
+            return;
+        }
+
+        // Add call event
+        CallEvents callEvents = callEventMap.get(event.getProperty("callId"));
+        callEvents.addEvent(event);
+
+        String secondCallId = bridgeMap.get(event.getProperty("callId"));
+        if (secondCallId == null) {
+            LOG.error(MessageFormat.format("No calls mapped to hangup second call leg for user [{0}] " +
+                            "based on call [{1}]", userName, event.getProperty("callId")));
+            return;
+        }
+
+        // Hangup second call leg
+        hangupCall(secondCallId);
+    }
+
+    private void hangupCall(final String callId) {
+        try {
+            Call call = Call.get(callId);
+
+            if (call != null) {
+                call.hangUp();
+            } else {
+                LOG.error(MessageFormat.format("Could not find call [{0}] to hangup", callId));
+            }
+        } catch (Exception e) {
+            LOG.error(MessageFormat.format("Error while getting call [{0}]", callId), e);
         }
     }
 
-    private boolean incomingCallExists(final Event event) {
-        for (Map<String, BridgeDetails> bridgeDetailsMap : bridgeMap.values()) {
+    private boolean hasActiveCall(final Event event) {
+        for (Map<String, CallEvents> callEventMap : userEventCallMap.values()) {
 
-            for (BridgeDetails bridgeDetails : bridgeDetailsMap.values()) {
-
-                if (bridgeDetails.getIncomingCall() != null
-                        && bridgeDetails.getIncomingCall().hasIncomingEvent(event)) {
+            for (CallEvents callEvents : callEventMap.values()) {
+                if (callEvents.hasActiveCall(event)) {
                     return true;
                 }
             }
@@ -278,34 +293,28 @@ public class CallbackServices {
         return false;
     }
 
-
-    /**
-     * Get user events.
-     * @param userName the user name.
-     * @return the list of events.
-     */
     public List<CallbackAdapter> getUserCallbacks(final String userName) {
         return getUserCallbacks(userName, null);
     }
-    
 
-    /**
-     * Get user events.
-     * @param userName the user name.
-     * @param callId filter by a specific call id
-     * @return the list of events.
-     */
     public List<CallbackAdapter> getUserCallbacks(final String userName, final String callId) {
-        
-        Map<String, BridgeDetails> events = bridgeMap.get(userName);
+        Map<String, CallEvents> callEventMap = userEventCallMap.get(userName);
+        if (callEventMap == null) {
+            return Collections.emptyList();
+        }
+
         List<CallbackAdapter> userEvents = new ArrayList<CallbackAdapter>();
-        if(events != null) {
-            for(Entry<String, BridgeDetails> entry : events.entrySet()) {
-                if((callId != null && entry.getKey().equals(callId)) || callId == null) {
-                    userEvents.add(new CallbackAdapter(entry.getValue()));
-                }
-            }
+
+        if (callId != null) {
+            CallEvents callEvents = callEventMap.get(callId);
+            userEvents.add(new CallbackAdapter(callEvents));
+            return userEvents;
+        }
+
+        for (CallEvents callEvents : callEventMap.values()) {
+            userEvents.add(new CallbackAdapter(callEvents));
         }
         return userEvents;
     }
+
 }

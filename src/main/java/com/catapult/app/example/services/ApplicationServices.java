@@ -25,7 +25,7 @@ public class ApplicationServices {
         applicationParameters.put(ParametersConstants.NAME, userApplicationDescription);
         //Define the callback URL
         applicationParameters.put(ParametersConstants.INCOMING_CALL_URL,
-                URLUtil.getCallbacksBaseUrl(baseAppUrl, userName));
+                URLUtil.getIncomingCallbackUrl(baseAppUrl, userName));
         return Application.create(applicationParameters);
     }
     
