@@ -26,6 +26,7 @@ public class UserConfiguration {
     @Value(value = "${sandbox.api.version:}")
     private String apiVersion;
    
+<<<<<<< HEAD
     @PostConstruct
     public void userConfiguration() {
         BandwidthClient bandwidthClient = BandwidthClient.getInstance();
@@ -35,6 +36,22 @@ public class UserConfiguration {
         if(!StringUtils.isBlank(apiUrl) && !StringUtils.isBlank(apiVersion)) {
             bandwidthClient.setEndpointandVersion(apiUrl, apiVersion);
         }
+=======
+    @Value(value = "${sandbox.base.url}")
+    private String appUrl;
+    
+    private String currentAppUrl;
+
+    private BandwidthClient bandwidthClient;
+    
+    @PostConstruct
+    public void userConfiguration() {
+        this.currentAppUrl = this.appUrl + "/" + this.userId + "/";
+        bandwidthClient = BandwidthClient.getInstance();
+        bandwidthClient.setCredentials(userId, userApiKey, userApiSecret);
+        bandwidthClient.setEndpointandVersion(apiUrl, apiVersion);
+
+>>>>>>> master
     }
 
     /**
@@ -43,4 +60,56 @@ public class UserConfiguration {
     public String getUserId() {
         return userId;
     }
+<<<<<<< HEAD
+=======
+
+    /**
+     * @return the userApiToken
+     */
+    public String getUserApiKey() {
+        return userApiKey;
+    }
+
+    /**
+     * @return the userApiSecret
+     */
+    public String getUserApiSecret() {
+        return userApiSecret;
+    }
+
+    /**
+     * @return the apiUrl
+     */
+    public String getApiUrl() {
+        return apiUrl;
+    }
+
+    /**
+     * @return the apiVersion
+     */
+    public String getApiVersion() {
+        return apiVersion;
+    }
+
+    /**
+     * @return the userClientuserClient
+     */
+    public BandwidthClient getUserClient() {
+        return bandwidthClient;
+    }
+
+    /**
+     * @return the appUrl
+     */
+    public String getAppUrl() {
+        return appUrl;
+    }
+
+    /**
+     * @return the currentAppUrl
+     */
+    public String getCurrentAppUrl() {
+        return currentAppUrl;
+    }
+>>>>>>> master
 }

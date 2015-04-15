@@ -108,11 +108,18 @@ public class UserServices {
             LOG.error(String.format("Could not create a Domain: %s", e));
             throw e;
         }
+<<<<<<< HEAD
         com.catapult.app.example.beans.Endpoint endpoint = new com.catapult.app.example.beans.Endpoint(createdEndpoint);
         endpoint.setApplicationId(createdApplication.getId());
         newUser.setEndpoint(endpoint);
         newUser.setPhoneNumber(phoneNumbers.get(0).getNumber());
 
+=======
+        
+        newUser.setEndpoint(new com.catapult.app.example.beans.Endpoint(createdEndpoint));
+        newUser.setPhoneNumber(phoneNumbers.get(0).getNumber());
+        
+>>>>>>> master
         users.putIfAbsent(userAdapter.getUserName(), newUser);
         currentCatapultUser.getPhoneNumbers().addAll(phoneNumbers);
         catapultUserData.putIfAbsent(userConfiguration.getUserId(), currentCatapultUser);

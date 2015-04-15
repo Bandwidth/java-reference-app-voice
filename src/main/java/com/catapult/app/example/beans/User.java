@@ -15,7 +15,10 @@ public class User implements Serializable {
     private String password;
     private Domain domain;
     private Endpoint endpoint;
+<<<<<<< HEAD
     //private PhoneNumber phoneNumber;
+=======
+>>>>>>> master
     private String phoneNumber;
     private Application application;
     
@@ -91,15 +94,25 @@ public class User implements Serializable {
     /**
      * @return the application
      */
+<<<<<<< HEAD
     public Application getApplication() {
         return application;
+=======
+    public String getPhoneNumber() {
+        return phoneNumber;
+>>>>>>> master
     }
 
     /**
      * @param application the application to set
      */
+<<<<<<< HEAD
     public void setApplication(final Application application) {
         this.application = application;
+=======
+    public void setPhoneNumber(final String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+>>>>>>> master
     }
 
     /**
