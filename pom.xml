@@ -16,6 +16,13 @@
         <jetty.version>8.1.7.v20120910</jetty.version>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>oss.sonatype</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+        </repository>
+    </repositories>
+
     <dependencies>
         <!-- Servlet API -->
         <dependency>
