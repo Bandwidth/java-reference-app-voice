@@ -1,6 +1,7 @@
 package com.catapult.app.example.beans;
 
 import com.bandwidth.sdk.model.events.Event;
+import com.bandwidth.sdk.model.events.IncomingCallEvent;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -28,6 +29,16 @@ public class CallDetails implements Serializable {
 
     public void addEvent(Event event) {
         this.events.add(event);
+    }
+
+    public boolean hasIncomingEvent(Event event) {
+        for (Event evt : events) {
+            if (evt instanceof IncomingCallEvent
+                    && event.getProperty("to").equalsIgnoreCase(event.getProperty("to"))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public void setEvents(List<Event> events) {

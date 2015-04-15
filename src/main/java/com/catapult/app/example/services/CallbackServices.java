@@ -5,16 +5,13 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
-import com.bandwidth.sdk.model.events.AnswerEvent;
-import com.bandwidth.sdk.model.events.IncomingCallEvent;
+import com.bandwidth.sdk.model.events.*;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.bandwidth.sdk.model.Bridge;
 import com.bandwidth.sdk.model.Call;
-import com.bandwidth.sdk.model.events.Event;
-import com.bandwidth.sdk.model.events.EventBase;
 import com.catapult.app.example.beans.BridgeDetails;
 import com.catapult.app.example.beans.CallDetails;
 import com.catapult.app.example.beans.User;
@@ -52,12 +49,14 @@ public class CallbackServices {
                     createCallToEndpoint(event, userName, baseAppUrl);
                 }
             } else if (event instanceof AnswerEvent) {
-                LOG.info(MessageFormat.format("Call answered [{0}]", eventString));
                 bridgeCalls(event, userName);
+
+            } else if (event instanceof HangupEvent) {
+                removeCall(event, userName);
 
             } else {
                 LOG.info(MessageFormat.format("Received event for endpoint calls [{0}]", eventString));
-                storeCallsEvent(event, userName);
+                storeCallEvent(event, userName);
             }
         } catch (Exception e) {
             LOG.error("Could not create event from string", e);
@@ -86,11 +85,16 @@ public class CallbackServices {
         try {
             User user = userServices.getUser(userName);
 
-            if (user.getPhoneNumber().contains(event.getProperty("to").trim())) {
-                createCall(event, userName, user.getEndpoint().getSipUri(), event.getProperty("to"), baseAppUrl);
+            if (!incomingCallExists(event)) {
+                if (user.getPhoneNumber().contains(event.getProperty("to").trim())) {
+                    createCall(event, userName, user.getEndpoint().getSipUri(), event.getProperty("to"), baseAppUrl);
+                } else {
+                    LOG.error(MessageFormat.format("Could not find the number [{0}] for userName [{1}]",
+                            event.getProperty("to"), userName));
+                }
             } else {
-                LOG.error(MessageFormat.format("Could not find the number [{0}] for userName [{1}]",
-                        event.getProperty("to"), userName));
+                LOG.info(MessageFormat.format("Call to [{0}] already exist. Rejecting call", event.getProperty("to")));
+                hangupCall(event);
             }
         } catch (UserNotFoundException e) {
             LOG.error("User not found to create call", e);
@@ -139,6 +143,21 @@ public class CallbackServices {
         bridgeDetailsMap.put(call.getId(), bridgeDetails);
     }
 
+    private void hangupCall(final Event event) {
+        try {
+            Call call = Call.get(event.getProperty("callId"));
+
+            if (call != null) {
+                call.hangUp();
+            } else {
+                LOG.error(MessageFormat.format("Could not find call [{0}] to hangup",
+                        event.getProperty("callId")));
+            }
+        } catch (Exception e) {
+            LOG.error("Error while getting call", e);
+        }
+    }
+
     private void bridgeCalls(final Event event, final String userName) {
 
         if (userName == null) {
@@ -183,7 +202,7 @@ public class CallbackServices {
         }
     }
 
-    private void storeCallsEvent(final Event event, final String userName) {
+    private void storeCallEvent(final Event event, final String userName) {
 
         if (userName == null) {
             LOG.error(MessageFormat.format("Could not find the username for call [{0}]",
@@ -191,14 +210,14 @@ public class CallbackServices {
             return;
         }
 
-        if (event.getProperty("callId") == null) {
-            LOG.error(MessageFormat.format("Could not find the callId on event [{0}]", event));
-            return;
-        }
-
         Map<String, BridgeDetails> bridgeDetailsMap = bridgeMap.get(userName);
         if (bridgeDetailsMap == null) {
             LOG.error(MessageFormat.format("No incoming call mapped to create bridge for user [{0}]", userName));
+            return;
+        }
+
+        if (event.getProperty("callId") == null) {
+            LOG.error(MessageFormat.format("Could not find the callId on event [{0}]", event));
             return;
         }
 
@@ -216,4 +235,35 @@ public class CallbackServices {
             }
         }
     }
+
+    private void removeCall(final Event event, final String userName) {
+        if (userName == null) {
+            LOG.error(MessageFormat.format("Could not find the username for call [{0}]",
+                    event.getProperty("callId")));
+            return;
+        }
+
+        Map<String, BridgeDetails> bridgeDetailsMap = bridgeMap.get(userName);
+        if (bridgeDetailsMap == null) {
+            LOG.error(MessageFormat.format("No incoming call mapped to create bridge for user [{0}]", userName));
+            return;
+        }
+
+        bridgeDetailsMap.remove(event.getProperty("callId"));
+    }
+
+    private boolean incomingCallExists(final Event event) {
+        for (Map<String, BridgeDetails> bridgeDetailsMap : bridgeMap.values()) {
+
+            for (BridgeDetails bridgeDetails : bridgeDetailsMap.values()) {
+
+                if (bridgeDetails.getIncomingCall() != null
+                        && bridgeDetails.getIncomingCall().hasIncomingEvent(event)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
 }
