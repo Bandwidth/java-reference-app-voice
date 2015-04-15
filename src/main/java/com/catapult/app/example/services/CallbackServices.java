@@ -1,17 +1,25 @@
 package com.catapult.app.example.services;
 
 import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
-import com.bandwidth.sdk.model.events.*;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.bandwidth.sdk.model.Bridge;
 import com.bandwidth.sdk.model.Call;
+import com.bandwidth.sdk.model.events.AnswerEvent;
+import com.bandwidth.sdk.model.events.Event;
+import com.bandwidth.sdk.model.events.EventBase;
+import com.bandwidth.sdk.model.events.HangupEvent;
+import com.bandwidth.sdk.model.events.IncomingCallEvent;
+import com.catapult.app.example.adapters.CallbackAdapter;
 import com.catapult.app.example.beans.BridgeDetails;
 import com.catapult.app.example.beans.CallDetails;
 import com.catapult.app.example.beans.User;
@@ -266,4 +274,34 @@ public class CallbackServices {
         return false;
     }
 
+
+    /**
+     * Get user events.
+     * @param userName the user name.
+     * @return the list of events.
+     */
+    public List<CallbackAdapter> getUserCallbacks(final String userName) {
+        return getUserCallbacks(userName, null);
+    }
+    
+
+    /**
+     * Get user events.
+     * @param userName the user name.
+     * @param callId filter by a specific call id
+     * @return the list of events.
+     */
+    public List<CallbackAdapter> getUserCallbacks(final String userName, final String callId) {
+        
+        Map<String, BridgeDetails> events = bridgeMap.get(userName);
+        List<CallbackAdapter> userEvents = new ArrayList<CallbackAdapter>();
+        if(events != null) {
+            for(Entry<String, BridgeDetails> entry : events.entrySet()) {
+                if((callId != null && entry.getKey().equals(callId)) || callId == null) {
+                    userEvents.add(new CallbackAdapter(entry.getValue()));
+                }
+            }
+        }
+        return userEvents;
+    }
 }
