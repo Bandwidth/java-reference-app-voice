@@ -37,13 +37,16 @@ public class AppContextAware implements ApplicationContextAware {
             catapultUser = new CatapultUser();
         }
 
-        final String userDomainName = "ud-" + RandomStringUtils.randomAlphanumeric(12);
-        final String userDomainDescription = MessageFormat.format("Sandbox Domain created for user {0}",
+        final String domainName = "ud-" + RandomStringUtils.randomAlphanumeric(12);
+        final String domainDescription = MessageFormat.format("Sandbox Domain created for user {0}",
                 userConfiguration.getUserId());
 
         try {
-            Domain userDomain = domainServices.createDomain(userDomainName, userDomainDescription);
-            catapultUser.setDomain(userDomain);
+            Domain domain = domainServices.createDomain(domainName, domainDescription);
+            catapultUser.setDomain(domain);
+
+            LOG.info(MessageFormat.format("Sandbox Domain [{0}] [{1}] created for user [{2}]",
+                    domain.getId(), domain.getName(), userConfiguration.getUserId()));
         } catch(final Exception e) {
             LOG.error(MessageFormat.format("Could not create a Domain when App was deployed for user [{0}]",
                     userConfiguration.getUserId()), e);
