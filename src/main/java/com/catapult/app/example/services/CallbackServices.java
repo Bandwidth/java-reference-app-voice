@@ -58,6 +58,9 @@ public class CallbackServices {
                     // Case Incoming call from PSTN to a number associated to an Endpoint
                     createCallToEndpoint(event, userName, baseAppUrl);
                 }
+            } else if (event instanceof AnswerEvent) {
+                bridgeCalls(event, userName);
+
             } else if (event instanceof HangupEvent) {
                 checkCallHangup(event, userName);
 
@@ -74,7 +77,7 @@ public class CallbackServices {
             Event event = EventBase.createEventFromString(eventString);
 
             if (event instanceof AnswerEvent) {
-                bridgeCalls(event, userName);
+                answerIncomingCall(event, userName);
 
             } else if (event instanceof HangupEvent) {
                 checkCallHangup(event, userName);
@@ -166,7 +169,7 @@ public class CallbackServices {
         bridgeMap.put(incomingCall.getCallId(), outgoingCall.getCallId());
     }
 
-    private void bridgeCalls(final Event event, final String userName) {
+    private void answerIncomingCall(final Event event, final String userName) {
         final String outgoingCallId = event.getProperty("callId");
 
         if (userName == null) {
@@ -192,6 +195,45 @@ public class CallbackServices {
         callEvents.addEvent(event);
 
         try {
+            // We need to answer the incoming call after outgoing is answered and then
+            // create bridge just when the incoming call receives the answered event
+            Call incomingCall = Call.get(incomingCallId);
+            incomingCall.answerOnIncoming();
+
+            LOG.info(MessageFormat.format("Incoming call [{0}] answered for user [{1}]",
+                    incomingCall, userName));
+
+        } catch (Exception e) {
+            LOG.error(MessageFormat.format("Incoming call [{0}] could not be answered", incomingCallId), e);
+        }
+    }
+
+    private void bridgeCalls(final Event event, final String userName) {
+        final String incomingCallId = event.getProperty("callId");
+
+        if (userName == null) {
+            LOG.error(MessageFormat.format("Could not find the username for call [{0}]", incomingCallId));
+            return;
+        }
+
+        String outgoingCallId = bridgeMap.get(incomingCallId);
+        if (outgoingCallId == null) {
+            LOG.error(MessageFormat.format("No calls mapped to create bridge for user [{0}] based on call [{1}]",
+                    userName, outgoingCallId));
+            return;
+        }
+
+        Map<String, CallEvents> callEventMap = userEventCallMap.get(userName);
+        if (callEventMap == null) {
+            LOG.error(MessageFormat.format("No call mapped for user [{0}]", userName));
+            return;
+        }
+
+        // Add event when call is answered
+        CallEvents callEvents = callEventMap.get(incomingCallId);
+        callEvents.addEvent(event);
+
+        try {
             // Bridge the incoming and outgoing calls using Bandwidth SDK
             Bridge bridge = Bridge.create(incomingCallId, outgoingCallId);
 
@@ -202,18 +244,6 @@ public class CallbackServices {
 
             LOG.info(MessageFormat.format("Calls [{0}, {1}] successfully bridged by [{2}]",
                     incomingCallId, outgoingCallId, bridge.getId()));
-
-            try {
-                // We need to answer the incoming call after outgoing is answered and bridge is created
-                Call incomingCall = Call.get(incomingCallId);
-                incomingCall.answerOnIncoming();
-
-                LOG.info(MessageFormat.format("Incoming call [{0}] answered for user [{1}]",
-                        incomingCall, userName));
-
-            } catch (Exception e) {
-                LOG.error(MessageFormat.format("Incoming call [{0}] could not be answered", incomingCallId), e);
-            }
 
         } catch (Exception e) {
             LOG.error(MessageFormat.format("Bridge could not be created for calls [{0}, {1}]",
