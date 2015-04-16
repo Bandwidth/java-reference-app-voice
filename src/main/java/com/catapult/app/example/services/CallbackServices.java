@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
@@ -132,8 +131,6 @@ public class CallbackServices {
 
     private void createCall(final Event event, final String userName, final String to, final String from,
                             final String baseAppUrl) throws UserNotFoundException, Exception {
-
-        User user = userServices.getUser(userName);
 
         // Create outgoing call using Bandwidth SDK
         Call call = Call.create(to, from, URLUtil.getOutgoingCallbackUrl(baseAppUrl, userName), null);
