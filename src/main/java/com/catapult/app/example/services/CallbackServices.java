@@ -167,16 +167,17 @@ public class CallbackServices {
     }
 
     private void bridgeCalls(final Event event, final String userName) {
+        final String outgoingCallId = event.getProperty("callId");
+
         if (userName == null) {
-            LOG.error(MessageFormat.format("Could not find the username for call [{0}]",
-                    event.getProperty("callId")));
+            LOG.error(MessageFormat.format("Could not find the username for call [{0}]", outgoingCallId));
             return;
         }
 
-        String secondCallId = bridgeMap.get(event.getProperty("callId"));
-        if (secondCallId == null) {
+        String incomingCallId = bridgeMap.get(outgoingCallId);
+        if (incomingCallId == null) {
             LOG.error(MessageFormat.format("No calls mapped to create bridge for user [{0}] based on call [{1}]",
-                    userName, event.getProperty("callId")));
+                    userName, outgoingCallId));
             return;
         }
 
@@ -187,24 +188,33 @@ public class CallbackServices {
         }
 
         // Add event when call is answered
-        CallEvents callEvents = callEventMap.get(event.getProperty("callId"));
+        CallEvents callEvents = callEventMap.get(outgoingCallId);
         callEvents.addEvent(event);
 
         try {
+            // We need to answer the incoming call after outgoing is answered
+            Call incomingCall = Call.get(incomingCallId);
+            incomingCall.answerOnIncoming();
+
+        } catch (Exception e) {
+            LOG.error(MessageFormat.format("Incoming call [{0}] could not be answered", incomingCallId), e);
+        }
+
+        try {
             // Bridge the incoming and outgoing calls using Bandwidth SDK
-            Bridge bridge = Bridge.create(secondCallId, event.getProperty("callId"));
+            Bridge bridge = Bridge.create(incomingCallId, outgoingCallId);
 
             if (bridge == null || bridge.getId() == null) {
                 LOG.error(MessageFormat.format("Could not bridge calls [{0}, {1}]",
-                        secondCallId, event.getProperty("callId")));
+                        incomingCallId, outgoingCallId));
             }
 
             LOG.info(MessageFormat.format("Calls [{0}, {1}] successfully bridged by [{2}]",
-                    secondCallId, event.getProperty("callId"), bridge.getId()));
+                    incomingCallId, outgoingCallId, bridge.getId()));
 
         } catch (Exception e) {
             LOG.error(MessageFormat.format("Bridge could not be created for calls [{0}, {1}]",
-                    secondCallId, event.getProperty("callId")), e);
+                    incomingCallId, outgoingCallId), e);
         }
     }
 

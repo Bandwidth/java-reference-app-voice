@@ -8,10 +8,9 @@ public interface ParametersConstants {
 
     String QUANTITY = "quantity";
     String NUMBER = "number";
-    String STATE = "state";
     String AREA_CODE = "areaCode";
     String NAME = "name";
     String INCOMING_CALL_URL = "incomingCallUrl";
-    String APPLICATION_ID = "application_id";
-    
+    String APPLICATION_AUTO_ANSWER = "autoAnswer";
+
 }

@@ -63,26 +63,9 @@ public class UserServices {
 
         final User newUser = new User(userAdapter);
 
-        // Verify if the catapult user has a existing sandbox app domain created.
-        CatapultUser currentCatapultUser = catapultUserData.get(userConfiguration.getUserId());
-        Domain userDomain;
-        if (currentCatapultUser == null) {
-            currentCatapultUser = new CatapultUser();
-        }
-
-        // Create a domain
-        if (currentCatapultUser.getDomain() == null) {
-            final String userDomainName = "ud-" + RandomStringUtils.randomAlphanumeric(12);
-            final String userDomainDescription = "Sandbox created Domain for user " + userConfiguration.getUserId();
-            //Create a new Domain.
-            try {
-                userDomain = domainServices.createDomain(userDomainName, userDomainDescription);
-                currentCatapultUser.setDomain(userDomain);
-            } catch(final AppPlatformException e) {
-                LOG.error(String.format("Could not create a Domain: %s", e));
-                throw e;
-            }
-        }
+        // The Domain is created when app is deployed on container. Check AppContextAware.java
+        // The catapultUser must exists at this point
+        CatapultUser catapultUser = catapultUserData.get(userConfiguration.getUserId());
 
         // Allocate a number
         final List<PhoneNumber> phoneNumbers = phoneServices.searchAndAllocateANumber(1, "469", false);
@@ -100,7 +83,7 @@ public class UserServices {
 
         Endpoint createdEndpoint;
         try {
-            createdEndpoint = endpointServices.createEndpoint(currentCatapultUser.getDomain().getId(), userEndpointName,
+            createdEndpoint = endpointServices.createEndpoint(catapultUser.getDomain().getId(), userEndpointName,
                     userAdapter.getPassword(), userEndpointDescription);
             //Add the application ID to the endpoint.
             endpointServices.updateEndpoint(createdEndpoint, userAdapter.getPassword(), createdApplication.getId());
@@ -114,8 +97,7 @@ public class UserServices {
         newUser.setPhoneNumber(phoneNumbers.get(0).getNumber());
 
         users.putIfAbsent(userAdapter.getUserName(), newUser);
-        currentCatapultUser.getPhoneNumbers().addAll(phoneNumbers);
-        catapultUserData.putIfAbsent(userConfiguration.getUserId(), currentCatapultUser);
+        catapultUser.getPhoneNumbers().addAll(phoneNumbers);
 
         newUser.setPassword(null);
         return newUser;
@@ -137,15 +119,22 @@ public class UserServices {
         return user;
     }
 
-    public User getUserByEndpoint(final String sipUri) throws UserNotFoundException {
-        if (sipUri != null) {
-            for (User user : users.values()) {
-                if (sipUri.equalsIgnoreCase(user.getEndpoint().getSipUri())) {
-                    return user;
-                }
-            }
-        }
-        throw new UserNotFoundException(sipUri);
+    /**
+     *
+     * @param userId
+     * @return
+     */
+    public CatapultUser getCatapultUser(String userId) {
+        return catapultUserData.get(userId);
+    }
+
+    /**
+     *
+     * @param userId
+     * @param catapultUser
+     */
+    public void putCatapultUser(String userId, CatapultUser catapultUser) {
+        catapultUserData.putIfAbsent(userId, catapultUser);
     }
 
     /**
