@@ -32,22 +32,6 @@ public class CallEvents implements Serializable {
         this.events.add(event);
     }
 
-    public boolean hasActiveCall(Event event) {
-        boolean isActiveCall = false;
-        for (Event evt : events) {
-            if (evt instanceof IncomingCallEvent && evt.getProperty("to").equals(event.getProperty("to"))) {
-                isActiveCall = true;
-            }
-
-            // Here we guarantee that the incoming call event is always placed before
-            // hangup event inside this list
-            if (evt instanceof HangupEvent && isActiveCall) {
-                isActiveCall = false;
-            }
-        }
-        return isActiveCall;
-    }
-
     public void setEvents(List<Event> events) {
         this.events = events;
     }

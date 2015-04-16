@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 
 import com.bandwidth.sdk.AppPlatformException;
 import com.bandwidth.sdk.model.Application;
-import com.bandwidth.sdk.model.Domain;
 import com.bandwidth.sdk.model.Endpoint;
 import com.bandwidth.sdk.model.PhoneNumber;
 import com.catapult.app.example.adapters.UserAdapter;
@@ -144,32 +143,33 @@ public class UserServices {
      */
     public void deleteUser(final String userName) throws Exception {
         final User deletedUser = users.remove(userName);
-        if(deletedUser == null) {
+        if (deletedUser == null) {
             //User not found
             throw new UserNotFoundException(userName);
         }
 
         //Remove the number
-        final CatapultUser currentCatapultUser = catapultUserData.get(userConfiguration.getUserId());
+        final CatapultUser catapultUser = catapultUserData.get(userConfiguration.getUserId());
+
         PhoneNumber deletedNumber = null;
-        for(final PhoneNumber currentnumber : currentCatapultUser.getPhoneNumbers()) {
-            if(currentnumber.getNumber().equals(deletedUser.getPhoneNumber())) {
-                deletedNumber = currentnumber;
-                currentnumber.delete();
+        for (final PhoneNumber number : catapultUser.getPhoneNumbers()) {
+            if (number.getNumber().equals(deletedUser.getPhoneNumber())) {
+                deletedNumber = number;
+                number.delete();
+                break;
             }
         }
-        currentCatapultUser.getPhoneNumbers().remove(deletedNumber);
+
+        catapultUser.getPhoneNumbers().remove(deletedNumber);
+
         //Remove the application
-        applicationServices.findApplication(deletedUser.getEndpoint().getApplicationId());
+        Application application = applicationServices.findApplication(deletedUser.getEndpoint().getApplicationId());
+        if (application != null) {
+            application.delete();
+        }
+
         //Remove the user endpoint
         endpointServices.deleteEndpoint(deletedUser.getDomain().getId(), deletedUser.getEndpoint().getId());
-
-        //If there is no users we should remove the domain
-        if(users.size() == 0) {
-            //Delete the domain
-            domainServices.deleteDomain(currentCatapultUser.getDomain().getId());
-            currentCatapultUser.setDomain(null);
-        }
     }
 
     /**
@@ -182,13 +182,13 @@ public class UserServices {
      */
     public User updateUser(final String name, final UserAdapter newUserInfo) throws UserNotFoundException, UserAlreadyExistsException {
         final User user = users.remove(name);
-        if(user == null) {
+        if (user == null) {
             //User not found
             throw new UserNotFoundException(name);
         }
         //merge the user properties
         user.mergeProperties(newUserInfo);
-        if(users.get(user.getUserName()) != null) {
+        if (users.get(user.getUserName()) != null) {
             throw new UserAlreadyExistsException(user.getUserName());
         }
         users.putIfAbsent(newUserInfo.getUserName(), user);

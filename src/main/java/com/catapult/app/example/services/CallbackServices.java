@@ -112,12 +112,6 @@ public class CallbackServices {
         try {
             User user = userServices.getUser(userName);
 
-            if (hasActiveCall(event)) {
-                LOG.info(MessageFormat.format("Call to [{0}] already exist. Doing nothing with call [{0}] to [{1}]",
-                        event.getProperty("callId"), event.getProperty("to")));
-                return;
-            }
-
             if (user.getPhoneNumber().contains(event.getProperty("to").trim())) {
                 createCall(event, userName, user.getEndpoint().getSipUri(), event.getProperty("to"), baseAppUrl);
             } else {
@@ -201,14 +195,15 @@ public class CallbackServices {
             incomingCall.answerOnIncoming();
 
             LOG.info(MessageFormat.format("Incoming call [{0}] answered for user [{1}]",
-                    incomingCall, userName));
+                    incomingCallId, userName));
 
         } catch (Exception e) {
             LOG.error(MessageFormat.format("Incoming call [{0}] could not be answered", incomingCallId), e);
         }
     }
 
-    private void bridgeCalls(final Event event, final String userName) {
+    // Need to synchronize on instance object to avoid connection allocation problem when calling the api
+    private synchronized void bridgeCalls(final Event event, final String userName) {
         final String incomingCallId = event.getProperty("callId");
 
         if (userName == null) {
@@ -313,16 +308,12 @@ public class CallbackServices {
                             "and call [{1}]", userName, event.getProperty("callId")));
         }
 
-        // Need to synchronize on callEventMap per user to avoid
-        // connection allocation problem when calling the api
-        synchronized (callEventMap) {
-
-            // Hangup second call leg
-            hangupCall(secondCallId);
-        }
+        // Hangup second call leg
+        hangupCall(secondCallId);
     }
 
-    private void hangupCall(final String callId) {
+    // Need to synchronize on instance object to avoid connection allocation problem when calling the api
+    private synchronized void hangupCall(final String callId) {
         try {
             Call call = Call.get(callId);
 
@@ -334,18 +325,6 @@ public class CallbackServices {
         } catch (Exception e) {
             LOG.error(MessageFormat.format("Error while getting call [{0}]", callId), e);
         }
-    }
-
-    private boolean hasActiveCall(final Event event) {
-        for (Map<String, CallEvents> callEventMap : userEventCallMap.values()) {
-
-            for (CallEvents callEvents : callEventMap.values()) {
-                if (callEvents.hasActiveCall(event)) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     public List<CallbackAdapter> getUserCallbacks(final String userName) {
