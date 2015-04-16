@@ -45,7 +45,7 @@ public class CallbackServices {
     @Autowired
     private UserServices userServices;
 
-    public void handleIncomingCallback(final String eventString, final String userName, final String baseAppUrl) {
+    public synchronized void handleIncomingCallback(final String eventString, final String userName, final String baseAppUrl) {
         try {
             Event event = EventBase.createEventFromString(eventString);
             if (event instanceof IncomingCallEvent) {
@@ -72,7 +72,7 @@ public class CallbackServices {
         }
     }
 
-    public void handleOutgoingCallback(final String eventString, final String userName, final String baseAppUrl) {
+    public synchronized void handleOutgoingCallback(final String eventString, final String userName, final String baseAppUrl) {
         try {
             Event event = EventBase.createEventFromString(eventString);
 
@@ -203,7 +203,7 @@ public class CallbackServices {
     }
 
     // Need to synchronize on instance object to avoid connection allocation problem when calling the api
-    private synchronized void bridgeCalls(final Event event, final String userName) {
+    private void bridgeCalls(final Event event, final String userName) {
         final String incomingCallId = event.getProperty("callId");
 
         if (userName == null) {
@@ -313,7 +313,7 @@ public class CallbackServices {
     }
 
     // Need to synchronize on instance object to avoid connection allocation problem when calling the api
-    private synchronized void hangupCall(final String callId) {
+    private void hangupCall(final String callId) {
         try {
             Call call = Call.get(callId);
 
