@@ -192,15 +192,6 @@ public class CallbackServices {
         callEvents.addEvent(event);
 
         try {
-            // We need to answer the incoming call after outgoing is answered
-            Call incomingCall = Call.get(incomingCallId);
-            incomingCall.answerOnIncoming();
-
-        } catch (Exception e) {
-            LOG.error(MessageFormat.format("Incoming call [{0}] could not be answered", incomingCallId), e);
-        }
-
-        try {
             // Bridge the incoming and outgoing calls using Bandwidth SDK
             Bridge bridge = Bridge.create(incomingCallId, outgoingCallId);
 
@@ -211,6 +202,18 @@ public class CallbackServices {
 
             LOG.info(MessageFormat.format("Calls [{0}, {1}] successfully bridged by [{2}]",
                     incomingCallId, outgoingCallId, bridge.getId()));
+
+            try {
+                // We need to answer the incoming call after outgoing is answered and bridge is created
+                Call incomingCall = Call.get(incomingCallId);
+                incomingCall.answerOnIncoming();
+
+                LOG.info(MessageFormat.format("Incoming call [{0}] answered for user [{1}]",
+                        incomingCall, userName));
+
+            } catch (Exception e) {
+                LOG.error(MessageFormat.format("Incoming call [{0}] could not be answered", incomingCallId), e);
+            }
 
         } catch (Exception e) {
             LOG.error(MessageFormat.format("Bridge could not be created for calls [{0}, {1}]",
