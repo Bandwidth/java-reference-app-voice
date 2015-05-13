@@ -1,5 +1,6 @@
 package com.catapult.app.example.services;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -95,6 +96,7 @@ public class UserServices {
         newUser.setEndpoint(endpoint);
         newUser.setPhoneNumber(phoneNumbers.get(0).getNumber());
 
+        newUser.setUserUrl(baseAppUrl + "/users/" + userAdapter.getUserName());
         users.putIfAbsent(userAdapter.getUserName(), newUser);
         catapultUser.getPhoneNumbers().addAll(phoneNumbers);
 
@@ -115,7 +117,23 @@ public class UserServices {
             throw new UserNotFoundException(userName);
         }
         user.setPassword(null);
+        user.setUserUrl(null);
         return user;
+    }
+    
+    /**
+     * Get an user.
+     * @param userName the user name to find.
+     * @return the found user.
+     */
+    public List<User> listUsers() {
+        List<User> usersList = new ArrayList<User>();
+        for(User currentUser : users.values()) {
+            currentUser.setPassword(null);
+            usersList.add(currentUser);
+        }
+        
+        return usersList;
     }
 
     /**

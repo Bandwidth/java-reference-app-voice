@@ -16,6 +16,7 @@ public class User implements Serializable {
     private Domain domain;
     private Endpoint endpoint;
     private String phoneNumber;
+    private String userUrl;
     private Application application;
 
     public User(){};
@@ -113,5 +114,19 @@ public class User implements Serializable {
      */
     public void setApplication(final Application application) {
         this.application = application;
+    }
+
+    /**
+     * @return the userUrl
+     */
+    public String getUserUrl() {
+        return userUrl;
+    }
+
+    /**
+     * @param userUrl the userUrl to set
+     */
+    public void setUserUrl(final String userUrl) {
+        this.userUrl = userUrl;
     }
 }
