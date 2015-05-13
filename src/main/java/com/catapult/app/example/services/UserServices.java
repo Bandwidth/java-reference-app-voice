@@ -122,9 +122,8 @@ public class UserServices {
     }
     
     /**
-     * Get an user.
-     * @param userName the user name to find.
-     * @return the found user.
+     * List the users.
+     * @return users list.
      */
     public List<User> listUsers() {
         List<User> usersList = new ArrayList<User>();
