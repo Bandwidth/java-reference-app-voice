@@ -1,10 +1,10 @@
 package com.catapult.app.example.adapters;
 
 import java.io.Serializable;
+import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.sun.xml.internal.bind.marshaller.Messages;
 import org.apache.commons.lang3.StringUtils;
 
 import com.catapult.app.example.constants.ErrorMessages;
@@ -73,10 +73,10 @@ public class UserAdapter implements Serializable {
             errors.put("password", ErrorMessages.MISSING_PASSWORD);
 
         } else if (this.password.length() < MIN_PASSWORD_LENGTH) {
-            errors.put("password", Messages.format(ErrorMessages.PASSWORD_MIN_LENGTH, MIN_PASSWORD_LENGTH));
+            errors.put("password", MessageFormat.format(ErrorMessages.PASSWORD_MIN_LENGTH, MIN_PASSWORD_LENGTH));
 
         } else if (this.password.length() > MAX_PASSWORD_LENGTH) {
-            errors.put("password", Messages.format(ErrorMessages.PASSWORD_MAX_LENGTH, MAX_PASSWORD_LENGTH));
+            errors.put("password", MessageFormat.format(ErrorMessages.PASSWORD_MAX_LENGTH, MAX_PASSWORD_LENGTH));
         }
 
         if (!errors.isEmpty()) {
