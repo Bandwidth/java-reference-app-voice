@@ -52,7 +52,6 @@ public class UserServices {
         if (userAdapter == null) {
             throw new MissingFieldsException();
         }
-
         userAdapter.validate();
 
         final User currentUser = users.get(userAdapter.getUserName());
