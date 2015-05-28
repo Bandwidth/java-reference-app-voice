@@ -72,7 +72,7 @@ public class UserAdapter implements Serializable {
         if (StringUtils.isBlank(this.password)) {
             errors.put("password", ErrorMessages.MISSING_PASSWORD);
 
-        } else if (this.password.length() < MIN_PASSWORD_LENGTH) {
+        } else if (this.password.length() <= MIN_PASSWORD_LENGTH) {
             errors.put("password", MessageFormat.format(ErrorMessages.PASSWORD_MIN_LENGTH, MIN_PASSWORD_LENGTH));
 
         } else if (this.password.length() > MAX_PASSWORD_LENGTH) {
