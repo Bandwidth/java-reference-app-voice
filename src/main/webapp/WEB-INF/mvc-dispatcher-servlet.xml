@@ -15,6 +15,16 @@
 
     <context:property-placeholder location="classpath:catapult-app-example.properties" />
 
+    <bean
+            class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="prefix">
+            <value>/static/</value>
+        </property>
+    </bean>
+
+    <mvc:resources mapping="/static/**" location="/resources/"
+                   cache-period="31556926"/>
+
     <mvc:annotation-driven />
     <mvc:default-servlet-handler />
     
