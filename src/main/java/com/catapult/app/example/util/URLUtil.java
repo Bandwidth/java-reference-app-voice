@@ -23,6 +23,14 @@ public class URLUtil {
     }
 
     /**
+     * Configure the static resources URL
+     * @return the url for a static resource
+     */
+    public static String getStaticResourceUrl(final String appBaseUrl, final String resourceFolder, final String resourceName) {
+        return String.format("%s/static/%s/%s", appBaseUrl, resourceFolder, resourceName);
+    }
+
+    /**
      * Get the server base URL.
      * @param request the http servlet request
      * @return the app base URL.

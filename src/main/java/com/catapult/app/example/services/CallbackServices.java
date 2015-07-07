@@ -1,10 +1,7 @@
 package com.catapult.app.example.services;
 
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
@@ -22,7 +19,6 @@ import com.bandwidth.sdk.model.events.IncomingCallEvent;
 import com.catapult.app.example.adapters.CallbackAdapter;
 import com.catapult.app.example.beans.CallEvents;
 import com.catapult.app.example.beans.User;
-import com.catapult.app.example.exceptions.UserNotFoundException;
 import com.catapult.app.example.util.URLUtil;
 
 @Service
@@ -49,17 +45,66 @@ public class CallbackServices {
         try {
             Event event = EventBase.createEventFromString(eventString);
             if (event instanceof IncomingCallEvent) {
+                // Answer the incoming call
+                Call incomingCall = answerIncomingCall(event, userName);
+
+                Map<String, CallEvents> callEventMap = userEventCallMap.get(userName);
+                if (callEventMap == null) {
+                    callEventMap = new ConcurrentHashMap<>();
+                    userEventCallMap.put(userName, callEventMap);
+                }
+
+                // Save the incoming call event
+                CallEvents incomingCallEvents = new CallEvents(incomingCall.getId());
+                incomingCallEvents.addEvent(event);
+
+
+            } else if (event instanceof AnswerEvent) {
+
+                // This is an answer for the inbound leg
+                LOG.info(MessageFormat.format("Answered INCOMING call leg [{0}]", ((AnswerEvent) event).getId()));
+
+                String to = event.getProperty("to");
+                String from = event.getProperty("from");
+                User user = userServices.getUser(userName);
 
                 if (event.getProperty("from") != null && sipPattern.matcher(event.getProperty("from")).find()) {
                     // Case Incoming call from Endpoint to a PSTN number
-                    createCallFromEndpoint(event, userName, baseAppUrl);
+                    from = user.getPhoneNumber();
 
                 } else if (event.getProperty("to") != null) {
                     // Case Incoming call from PSTN to a number associated to an Endpoint
-                    createCallToEndpoint(event, userName, baseAppUrl);
+                    to = user.getEndpoint().getSipUri();
                 }
-            } else if (event instanceof AnswerEvent) {
-                bridgeCalls(event, userName);
+
+                // Add it to a new bridge
+                Bridge bridge = addIncomingCallToBridge(event, userName);
+
+                Call incomingCall = Call.get(event.getProperty("callId"));
+
+                // Play ringing for the caller while they're waiting
+                playRinging(baseAppUrl, incomingCall);
+
+                // Create the outbound leg of the call on the new bridge
+                Call outgoingCall = createCall(event, userName, to, from, bridge.getId(), baseAppUrl);
+
+                Map<String, CallEvents> callEventMap = userEventCallMap.get(userName);
+                if (callEventMap == null) {
+                    callEventMap = new ConcurrentHashMap<>();
+                    userEventCallMap.put(userName, callEventMap);
+                }
+
+                // The events for outgoing call will be saved after AnswerEvent
+                CallEvents outgoingCallEvents = new CallEvents(outgoingCall.getId());
+
+
+                // Keep track of each call events
+                callEventMap.put(outgoingCall.getId(), outgoingCallEvents);
+
+                // Add the call legs to the bridge map
+                bridgeMap.put(outgoingCall.getId(), incomingCall.getId());
+                bridgeMap.put(incomingCall.getId(), outgoingCall.getId());
+
 
             } else if (event instanceof HangupEvent) {
                 checkCallHangup(event, userName);
@@ -77,7 +122,19 @@ public class CallbackServices {
             Event event = EventBase.createEventFromString(eventString);
 
             if (event instanceof AnswerEvent) {
-                answerIncomingCall(event, userName);
+                // This is the answer event from the user's endpoint
+                Map<String, CallEvents> callEventMap = userEventCallMap.get(userName);
+                if (callEventMap == null) {
+                    callEventMap = new ConcurrentHashMap<>();
+                    userEventCallMap.put(userName, callEventMap);
+                }
+
+                // The events for outgoing call will be saved after AnswerEvent
+                CallEvents outgoingCallEvents = new CallEvents(event.getProperty("callId"));
+
+
+                // Keep track of each call events
+                callEventMap.put(event.getProperty("callId"), outgoingCallEvents);
 
             } else if (event instanceof HangupEvent) {
                 checkCallHangup(event, userName);
@@ -90,160 +147,57 @@ public class CallbackServices {
         }
     }
 
-    private void createCallFromEndpoint(final Event event, final String userName, final String baseAppUrl) {
-        try {
-            User user = userServices.getUser(userName);
-
-            if (user.getEndpoint().getSipUri().contains(event.getProperty("from").trim())) {
-                createCall(event, userName, event.getProperty("to"), user.getPhoneNumber(), baseAppUrl);
-            } else {
-                LOG.error(MessageFormat.format("Could not find the endpoint [{0}] for userName [{1}]",
-                        event.getProperty("from"), userName));
-            }
-        } catch (UserNotFoundException e) {
-            LOG.error("User not found to create call", e);
-
-        } catch (Exception e) {
-            LOG.error("Could not create outbound call based on call FROM Endpoint", e);
-        }
+    private Call answerIncomingCall(final Event event, final String userName) throws Exception {
+        final String callId = event.getProperty("callId");
+        Call call = Call.get(callId);
+        LOG.info(MessageFormat.format("Answering INCOMING LEG [{0}]", callId));
+        call.answerOnIncoming();
+        return call;
     }
 
-    private void createCallToEndpoint(final Event event, final String userName, final String baseAppUrl) {
-        try {
-            User user = userServices.getUser(userName);
-
-            if (user.getPhoneNumber().contains(event.getProperty("to").trim())) {
-                createCall(event, userName, user.getEndpoint().getSipUri(), event.getProperty("to"), baseAppUrl);
-            } else {
-                LOG.error(MessageFormat.format("Could not find the number [{0}] for userName [{1}]",
-                        event.getProperty("to"), userName));
-            }
-        } catch (UserNotFoundException e) {
-            LOG.error("User not found to create call", e);
-
-        } catch (Exception e) {
-            LOG.error("Could not create outbound call based on call TO Endpoint", e);
-        }
-    }
-
-    private void createCall(final Event event, final String userName, final String to, final String from,
-                            final String baseAppUrl) throws UserNotFoundException, Exception {
-
-        // Create outgoing call using Bandwidth SDK
-        Call call = Call.create(to, from, URLUtil.getOutgoingCallbackUrl(baseAppUrl, userName), null);
-
-        if (call == null || call.getId() == null) {
-            LOG.error(MessageFormat.format("Could not create outgoing call for incoming call [{0}]",
-                    event.getProperty("callId")));
-            return;
-        }
-
-        LOG.info(MessageFormat.format("Created outgoing call [{0}] for incomingCall [{1}]",
-                call.getId(), event.getProperty("callId")));
-
-        Map<String, CallEvents> callEventMap = userEventCallMap.get(userName);
-        if (callEventMap == null) {
-            callEventMap = new ConcurrentHashMap<>();
-            userEventCallMap.put(userName, callEventMap);
-        }
-
-        // The events for outgoing call will be saved after AnswerEvent
-        CallEvents outgoingCall = new CallEvents(call.getId());
-
-        // Save the incoming call event
-        CallEvents incomingCall = new CallEvents(event.getProperty("callId"));
-        incomingCall.addEvent(event);
-
-        // Keep track of each call events
-        callEventMap.put(outgoingCall.getCallId(), outgoingCall);
-        callEventMap.put(incomingCall.getCallId(), incomingCall);
-
-        // Keep track of call ids to create a bridge
-        bridgeMap.put(outgoingCall.getCallId(), incomingCall.getCallId());
-        bridgeMap.put(incomingCall.getCallId(), outgoingCall.getCallId());
-    }
-
-    private void answerIncomingCall(final Event event, final String userName) {
-        final String outgoingCallId = event.getProperty("callId");
-
-        if (userName == null) {
-            LOG.error(MessageFormat.format("Could not find the username for call [{0}]", outgoingCallId));
-            return;
-        }
-
-        String incomingCallId = bridgeMap.get(outgoingCallId);
-        if (incomingCallId == null) {
-            LOG.error(MessageFormat.format("No calls mapped to create bridge for user [{0}] based on call [{1}]",
-                    userName, outgoingCallId));
-            return;
-        }
-
-        Map<String, CallEvents> callEventMap = userEventCallMap.get(userName);
-        if (callEventMap == null) {
-            LOG.error(MessageFormat.format("No call mapped for user [{0}]", userName));
-            return;
-        }
-
-        // Add event when call is answered
-        CallEvents callEvents = callEventMap.get(outgoingCallId);
-        callEvents.addEvent(event);
-
-        try {
-            // We need to answer the incoming call after outgoing is answered and then
-            // create bridge just when the incoming call receives the answered event
-            Call incomingCall = Call.get(incomingCallId);
-            incomingCall.answerOnIncoming();
-
-            LOG.info(MessageFormat.format("Incoming call [{0}] answered for user [{1}]",
-                    incomingCallId, userName));
-
-        } catch (Exception e) {
-            LOG.error(MessageFormat.format("Incoming call [{0}] could not be answered", incomingCallId), e);
-        }
-    }
-
-    // Need to synchronize on instance object to avoid connection allocation problem when calling the api
-    private void bridgeCalls(final Event event, final String userName) {
+    private Bridge addIncomingCallToBridge(final Event event, final String userName) throws Exception {
         final String incomingCallId = event.getProperty("callId");
 
         if (userName == null) {
-            LOG.error(MessageFormat.format("Could not find the username for call [{0}]", incomingCallId));
-            return;
+            throw new Exception(MessageFormat.format("Could not find the username for call [{0}]", incomingCallId));
         }
 
-        String outgoingCallId = bridgeMap.get(incomingCallId);
-        if (outgoingCallId == null) {
-            LOG.error(MessageFormat.format("No calls mapped to create bridge for user [{0}] based on call [{1}]",
-                    userName, outgoingCallId));
-            return;
+        // Bridge the incoming and outgoing calls using Bandwidth SDK
+        Bridge bridge = Bridge.create(incomingCallId);
+
+        if (bridge == null || bridge.getId() == null) {
+            throw new Exception(MessageFormat.format("Could not add call [{0}] to bridge",
+                    incomingCallId));
         }
 
-        Map<String, CallEvents> callEventMap = userEventCallMap.get(userName);
-        if (callEventMap == null) {
-            LOG.error(MessageFormat.format("No call mapped for user [{0}]", userName));
-            return;
+        LOG.info(MessageFormat.format("Call [{0}] added to bridge [{1}]",
+                incomingCallId, bridge.getId()));
+
+        return bridge;
+    }
+
+    private void playRinging(String baseAppUrl, Call call) throws Exception {
+        String url = URLUtil.getStaticResourceUrl(baseAppUrl, "sounds", "ring.mp3");
+
+        HashMap<String, Object> params = new HashMap<>();
+        params.put("fileUrl", url);
+        params.put("loopEnabled", true);
+
+        call.playAudio(params);
+    }
+
+    private Call createCall(final Event event, final String userName, final String to, final String from, final String bridgeId, String baseAppUrl) throws Exception {
+        HashMap<String, Object> params = new HashMap<>();
+        params.put("to", to);
+        params.put("from", from);
+        params.put("tag", event.getProperty("callId"));
+        params.put("callbackUrl", URLUtil.getOutgoingCallbackUrl(baseAppUrl, userName));
+        if (bridgeId != null) {
+            params.put("bridgeId", bridgeId);
         }
-
-        // Add event when call is answered
-        CallEvents callEvents = callEventMap.get(incomingCallId);
-        callEvents.addEvent(event);
-
-        try {
-            // Bridge the incoming and outgoing calls using Bandwidth SDK
-            Bridge bridge = Bridge.create(incomingCallId, outgoingCallId);
-
-            if (bridge == null || bridge.getId() == null) {
-                LOG.error(MessageFormat.format("Could not bridge calls [{0}, {1}]",
-                        incomingCallId, outgoingCallId));
-            }
-
-            LOG.info(MessageFormat.format("Calls [{0}, {1}] successfully bridged by [{2}]",
-                    incomingCallId, outgoingCallId, bridge.getId()));
-
-        } catch (Exception e) {
-            LOG.error(MessageFormat.format("Bridge could not be created for calls [{0}, {1}]",
-                    incomingCallId, outgoingCallId), e);
-        }
+        Call call = Call.create(params);
+        LOG.info(MessageFormat.format("Created OUTGOING LEG [{0}]", call.getId()));
+        return call;
     }
 
     private void addCallEvent(final Event event, final String userName) {
