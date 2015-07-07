@@ -61,52 +61,49 @@ public class CallbackServices {
 
             } else if (event instanceof AnswerEvent) {
 
-                //if (event.getProperty("tag") == null) {
-                    // This is an answer for the inbound leg
-                    LOG.info(MessageFormat.format("Answered INCOMING call leg [{0}]", ((AnswerEvent) event).getId()));
+                // This is an answer for the inbound leg
+                LOG.info(MessageFormat.format("Answered INCOMING call leg [{0}]", ((AnswerEvent) event).getId()));
 
-                    String to = event.getProperty("to");
-                    String from = event.getProperty("from");
-                    User user = userServices.getUser(userName);
+                String to = event.getProperty("to");
+                String from = event.getProperty("from");
+                User user = userServices.getUser(userName);
 
-                    if (event.getProperty("from") != null && sipPattern.matcher(event.getProperty("from")).find()) {
-                        // Case Incoming call from Endpoint to a PSTN number
-                        from = user.getPhoneNumber();
+                if (event.getProperty("from") != null && sipPattern.matcher(event.getProperty("from")).find()) {
+                    // Case Incoming call from Endpoint to a PSTN number
+                    from = user.getPhoneNumber();
 
-                    } else if (event.getProperty("to") != null) {
-                        // Case Incoming call from PSTN to a number associated to an Endpoint
-                        to = user.getEndpoint().getSipUri();
-                    }
+                } else if (event.getProperty("to") != null) {
+                    // Case Incoming call from PSTN to a number associated to an Endpoint
+                    to = user.getEndpoint().getSipUri();
+                }
 
-                    // Add it to a new bridge
-                    Bridge bridge = addIncomingCallToBridge(event, userName);
+                // Add it to a new bridge
+                Bridge bridge = addIncomingCallToBridge(event, userName);
 
-                    Call incomingCall = Call.get(event.getProperty("callId"));
+                Call incomingCall = Call.get(event.getProperty("callId"));
 
-                    // Play ringing for the caller while they're waiting
-                    playRinging(baseAppUrl, incomingCall);
+                // Play ringing for the caller while they're waiting
+                playRinging(baseAppUrl, incomingCall);
 
-                    // Create the outbound leg of the call on the new bridge
-                    Call outgoingCall = createCall(event, userName, to, from, bridge.getId(), baseAppUrl);
+                // Create the outbound leg of the call on the new bridge
+                Call outgoingCall = createCall(event, userName, to, from, bridge.getId(), baseAppUrl);
 
-                    Map<String, CallEvents> callEventMap = userEventCallMap.get(userName);
-                    if (callEventMap == null) {
-                        callEventMap = new ConcurrentHashMap<>();
-                        userEventCallMap.put(userName, callEventMap);
-                    }
+                Map<String, CallEvents> callEventMap = userEventCallMap.get(userName);
+                if (callEventMap == null) {
+                    callEventMap = new ConcurrentHashMap<>();
+                    userEventCallMap.put(userName, callEventMap);
+                }
 
-                    // The events for outgoing call will be saved after AnswerEvent
-                    CallEvents outgoingCallEvents = new CallEvents(outgoingCall.getId());
+                // The events for outgoing call will be saved after AnswerEvent
+                CallEvents outgoingCallEvents = new CallEvents(outgoingCall.getId());
 
 
-                    // Keep track of each call events
-                    callEventMap.put(outgoingCall.getId(), outgoingCallEvents);
+                // Keep track of each call events
+                callEventMap.put(outgoingCall.getId(), outgoingCallEvents);
 
-                    // Add the call legs to the bridge map
-                    bridgeMap.put(outgoingCall.getId(), incomingCall.getId());
-                    bridgeMap.put(incomingCall.getId(), outgoingCall.getId());
-
-                //}
+                // Add the call legs to the bridge map
+                bridgeMap.put(outgoingCall.getId(), incomingCall.getId());
+                bridgeMap.put(incomingCall.getId(), outgoingCall.getId());
 
 
             } else if (event instanceof HangupEvent) {
@@ -195,7 +192,9 @@ public class CallbackServices {
         params.put("from", from);
         params.put("tag", event.getProperty("callId"));
         params.put("callbackUrl", URLUtil.getOutgoingCallbackUrl(baseAppUrl, userName));
-        if (bridgeId != null) params.put("bridgeId", bridgeId);
+        if (bridgeId != null) {
+            params.put("bridgeId", bridgeId);
+        }
         Call call = Call.create(params);
         LOG.info(MessageFormat.format("Created OUTGOING LEG [{0}]", call.getId()));
         return call;
