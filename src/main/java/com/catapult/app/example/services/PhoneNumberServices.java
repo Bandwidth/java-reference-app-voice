@@ -1,5 +1,13 @@
 package com.catapult.app.example.services;
 
+import com.bandwidth.sdk.AppPlatformException;
+import com.bandwidth.sdk.model.AvailableNumber;
+import com.bandwidth.sdk.model.PhoneNumber;
+import com.catapult.app.example.constants.ParametersConstants;
+import com.catapult.app.example.exceptions.AllocatePhoneNumberException;
+import com.catapult.app.example.exceptions.SearchPhoneNumberException;
+import org.springframework.stereotype.Service;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -7,17 +15,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Service;
-
-import com.bandwidth.sdk.model.AvailableNumber;
-import com.bandwidth.sdk.model.PhoneNumber;
-import com.catapult.app.example.configuration.UserConfiguration;
-import com.catapult.app.example.constants.ParametersConstants;
-import com.catapult.app.example.exceptions.AllocatePhoneNumberException;
-import com.catapult.app.example.exceptions.SearchPhoneNumberException;
 
 @Service
 public class PhoneNumberServices {
@@ -99,7 +96,7 @@ public class PhoneNumberServices {
             for(PhoneNumber currentnumber : allocatedNumbers) {
                 try {
                     currentnumber.delete();
-                } catch (IOException e) {
+                } catch (IOException | AppPlatformException e) {
                     //Ignored in order to try to delete all other allocated numbers.
                 }
             }
