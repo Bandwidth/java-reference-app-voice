@@ -1,6 +1,7 @@
 package com.catapult.app.example.controllers;
 
 import java.io.IOException;
+import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -81,6 +82,12 @@ public class UsersController {
             throws UserNotFoundException {
         LOG.info(String.format("Get user: userName %s", userName));
         return userServices.getUser(userName);
+    }
+    
+    @RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public @ResponseBody List<User> listUsers() {
+        LOG.info(String.format("Listing users"));
+        return userServices.listUsers();
     }
 
     @RequestMapping(method = RequestMethod.DELETE, value = "/{userName}", produces = MediaType.APPLICATION_JSON_VALUE)
