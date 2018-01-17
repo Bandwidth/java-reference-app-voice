@@ -1,3 +1,5 @@
+# ⚠️ DEPRECATED⚠️ 
+
 ### Bandwidth Java Server Example for Mobile Voice Clients
 
 The java-reference-app-voice is an example application to show how the Bandwidth Application Platform APIs can be used to build mobile voice applications. This example app is intended to work with the catapult-reference-app-voice-android and catapult-reference-app-voice-ios mobile applications to provide a working example of all the components synched together to provide SIP voice on your mobile device.
